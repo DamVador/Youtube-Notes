@@ -2,6 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref } from 'vue';
+import axios from 'axios';
 
 defineProps({
     videos: Object,
@@ -36,27 +37,8 @@ const searchVideos = async () => {
 
 const saveAndWatch = async (video) => {
     try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content 
-            || document.head.querySelector('meta[name="csrf-token"]')?.content;
-        
-        const response = await fetch(route('videos.store'), {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'Accept': 'application/json',
-                'X-CSRF-TOKEN': csrfToken,
-                'X-Requested-With': 'XMLHttpRequest',
-            },
-            credentials: 'same-origin',
-            body: JSON.stringify(video),
-        });
-        
-        if (!response.ok) {
-            throw new Error('Failed to save video');
-        }
-        
-        const savedVideo = await response.json();
-        router.visit(route('videos.show', savedVideo.id));
+        const response = await axios.post(route('videos.store'), video);
+        router.visit(route('videos.show', response.data.id));
     } catch (error) {
         console.error('Save error:', error);
     }

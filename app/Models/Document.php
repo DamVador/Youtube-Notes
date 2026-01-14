@@ -7,14 +7,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 
-class Tag extends Model
+class Document extends Model
 {
     use HasFactory;
 
     protected $fillable = [
         'user_id',
-        'name',
-        'color',
+        'video_id',
+        'content',
+        'content_json',
+    ];
+
+    protected $casts = [
+        'content_json' => 'array',
     ];
 
     public function user(): BelongsTo
@@ -22,8 +27,13 @@ class Tag extends Model
         return $this->belongsTo(User::class);
     }
 
-    public function notes(): BelongsToMany
+    public function video(): BelongsTo
     {
-        return $this->belongsToMany(Note::class)->withTimestamps();
+        return $this->belongsTo(Video::class);
+    }
+
+    public function tags(): BelongsToMany
+    {
+        return $this->belongsToMany(Tag::class)->withTimestamps();
     }
 }

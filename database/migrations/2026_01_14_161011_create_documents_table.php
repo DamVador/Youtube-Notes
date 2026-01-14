@@ -8,20 +8,20 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('notes', function (Blueprint $table) {
+        Schema::create('documents', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained()->onDelete('cascade');
             $table->foreignId('video_id')->constrained()->onDelete('cascade');
-            $table->text('content');
-            $table->integer('timestamp')->nullable();
+            $table->longText('content')->nullable();
+            $table->json('content_json')->nullable();
             $table->timestamps();
 
-            $table->index(['user_id', 'video_id']);
+            $table->unique(['user_id', 'video_id']);
         });
 
         // Fulltext uniquement pour MySQL
         if (Schema::getConnection()->getDriverName() === 'mysql') {
-            Schema::table('notes', function (Blueprint $table) {
+            Schema::table('documents', function (Blueprint $table) {
                 $table->fullText('content');
             });
         }
@@ -29,6 +29,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('notes');
+        Schema::dropIfExists('documents');
     }
 };
