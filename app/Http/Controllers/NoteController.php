@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Note;
+use App\Models\Document;
 use App\Models\Video;
 use Illuminate\Http\Request;
 use Inertia\Inertia;
@@ -11,41 +12,130 @@ class NoteController extends Controller
 {
     public function index(Request $request)
     {
-        $query = $request->user()->notes()->with(['video', 'tags']);
+        $search = $request->input('search');
+        $tagId = $request->input('tag');
+        $videoId = $request->input('video');
+        $type = $request->input('type', 'all'); // 'all', 'documents', 'quick_notes'
 
-        // Recherche par mot-clé
-        if ($search = $request->input('search')) {
-            $query->whereFullText('content', $search)
-                  ->orWhere('content', 'like', '%' . $search . '%');
-        }
+        $allNotes = collect();
 
-        // Filtre par tag
-        if ($tagId = $request->input('tag')) {
-            $query->whereHas('tags', function ($q) use ($tagId) {
-                $q->where('tags.id', $tagId);
+        // Récupérer les Documents (éditeur riche)
+        if ($type === 'all' || $type === 'documents') {
+            $documentsQuery = $request->user()->documents()->with(['video', 'tags']);
+
+            if ($search) {
+                $documentsQuery->where(function ($q) use ($search) {
+                    $q->where('content', 'like', '%' . $search . '%');
+                });
+            }
+
+            if ($tagId) {
+                $documentsQuery->whereHas('tags', function ($q) use ($tagId) {
+                    $q->where('tags.id', $tagId);
+                });
+            }
+
+            if ($videoId) {
+                $documentsQuery->where('video_id', $videoId);
+            }
+
+            $documents = $documentsQuery->get()->map(function ($doc) {
+                return [
+                    'id' => 'doc_' . $doc->id,
+                    'original_id' => $doc->id,
+                    'type' => 'document',
+                    'content' => $doc->content,
+                    'content_preview' => $this->stripHtml($doc->content, 200),
+                    'timestamp' => null,
+                    'video' => $doc->video,
+                    'tags' => $doc->tags,
+                    'updated_at' => $doc->updated_at,
+                    'created_at' => $doc->created_at,
+                ];
             });
+
+            $allNotes = $allNotes->concat($documents);
         }
 
-        // Filtre par vidéo
-        if ($videoId = $request->input('video')) {
-            $query->where('video_id', $videoId);
+        // Récupérer les Quick Notes
+        if ($type === 'all' || $type === 'quick_notes') {
+            $notesQuery = $request->user()->notes()->with(['video', 'tags']);
+
+            if ($search) {
+                $notesQuery->where('content', 'like', '%' . $search . '%');
+            }
+
+            if ($tagId) {
+                $notesQuery->whereHas('tags', function ($q) use ($tagId) {
+                    $q->where('tags.id', $tagId);
+                });
+            }
+
+            if ($videoId) {
+                $notesQuery->where('video_id', $videoId);
+            }
+
+            $notes = $notesQuery->get()->map(function ($note) {
+                return [
+                    'id' => 'note_' . $note->id,
+                    'original_id' => $note->id,
+                    'type' => 'quick_note',
+                    'content' => $note->content,
+                    'content_preview' => $note->content,
+                    'timestamp' => $note->timestamp,
+                    'video' => $note->video,
+                    'tags' => $note->tags,
+                    'updated_at' => $note->updated_at,
+                    'created_at' => $note->created_at,
+                ];
+            });
+
+            $allNotes = $allNotes->concat($notes);
         }
 
-        $notes = $query->orderBy('updated_at', 'desc')->paginate(20);
+        // Trier par date de mise à jour
+        $allNotes = $allNotes->sortByDesc('updated_at')->values();
+
+        // Pagination manuelle
+        $page = $request->input('page', 1);
+        $perPage = 20;
+        $total = $allNotes->count();
+        $paginatedNotes = $allNotes->slice(($page - 1) * $perPage, $perPage)->values();
 
         $tags = $request->user()->tags()->withCount('notes')->get();
         $videos = $request->user()->videos()->select('id', 'title')->get();
 
         return Inertia::render('Notes/Index', [
-            'notes' => $notes,
+            'notes' => [
+                'data' => $paginatedNotes,
+                'current_page' => (int) $page,
+                'last_page' => ceil($total / $perPage),
+                'per_page' => $perPage,
+                'total' => $total,
+            ],
             'tags' => $tags,
             'videos' => $videos,
             'filters' => [
                 'search' => $search,
                 'tag' => $tagId,
                 'video' => $videoId,
+                'type' => $type,
             ],
         ]);
+    }
+
+    private function stripHtml($html, $maxLength = 200)
+    {
+        $text = strip_tags($html);
+        $text = html_entity_decode($text);
+        $text = preg_replace('/\s+/', ' ', $text);
+        $text = trim($text);
+        
+        if (strlen($text) > $maxLength) {
+            $text = substr($text, 0, $maxLength) . '...';
+        }
+        
+        return $text;
     }
 
     public function store(Request $request)

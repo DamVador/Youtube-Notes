@@ -15,7 +15,7 @@ Route::get('/', function () {
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
     ]);
-});
+})->name('welcome');
 
 // Routes protégées (authentification requise)
 Route::middleware(['auth', 'verified'])->group(function () {

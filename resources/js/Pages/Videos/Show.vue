@@ -358,7 +358,7 @@ const handleEditorClick = (event) => {
                     </svg>
                 </Link>
                 <!-- <h2 class="font-medium text-gray-900 dark:text-gray-100 truncate"> -->
-                <h2 class="font-medium truncate">
+                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
                     {{ video.title }}
                 </h2>
             </div>
