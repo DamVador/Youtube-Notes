@@ -3,6 +3,7 @@ import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TiptapEditor from '@/Components/TiptapEditor.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted, computed, watch } from 'vue';
+import html2pdf from 'html2pdf.js';
 
 const props = defineProps({
     video: Object,
@@ -395,6 +396,48 @@ const handleEditorClick = (event) => {
         event.preventDefault();
     }
 };
+
+const exportToPdf = () => {
+    const content = documentContent.value;
+    if (!content || content === '<p></p>') {
+        alert('No content to export');
+        return;
+    }
+
+    // Create a temporary container with styled content
+    const container = document.createElement('div');
+    container.innerHTML = `
+        <div style="font-family: Arial, sans-serif; padding: 20px;">
+            <h1 style="font-size: 18px; margin-bottom: 5px; color: #1f2937;">${props.video.title}</h1>
+            <p style="font-size: 12px; color: #6b7280; margin-bottom: 20px;">${props.video.channel_name}</p>
+            <hr style="border: none; border-top: 1px solid #e5e7eb; margin-bottom: 20px;">
+            <div style="font-size: 14px; line-height: 1.6; color: #374151;">
+                ${content}
+            </div>
+        </div>
+    `;
+
+    // Style timestamp links for PDF
+    container.querySelectorAll('.timestamp-link').forEach(link => {
+        link.style.backgroundColor = '#dbeafe';
+        link.style.color = '#1d4ed8';
+        link.style.padding = '2px 6px';
+        link.style.borderRadius = '4px';
+        link.style.fontFamily = 'monospace';
+        link.style.fontSize = '12px';
+        link.style.textDecoration = 'none';
+    });
+
+    const opt = {
+        margin: 10,
+        filename: `${props.video.title.substring(0, 50).replace(/[^a-z0-9]/gi, '_')}_notes.pdf`,
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+    };
+
+    html2pdf().set(opt).from(container).save();
+};
 </script>
 
 <template>
@@ -640,6 +683,15 @@ const handleEditorClick = (event) => {
                                     >
                                         + Insert Timestamp
                                     </button>
+                                    <button
+                                        @click="exportToPdf"
+                                        class="text-xs px-3 py-1.5 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors flex items-center gap-1"
+                                    >
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        Export PDF
+                                    </button>
                                     <span v-if="isSavingDocument" class="text-xs text-gray-500 dark:text-gray-400">
                                         Saving...
                                     </span>
@@ -739,6 +791,12 @@ const handleEditorClick = (event) => {
                                     class="text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
                                 >
                                     + Timestamp
+                                </button>
+                                <button
+                                    @click="exportToPdf"
+                                    class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
+                                >
+                                    PDF
                                 </button>
                                 <span v-if="lastSaved" class="text-xs text-green-600 dark:text-green-400">✓</span>
                             </div>
