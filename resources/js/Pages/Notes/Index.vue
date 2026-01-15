@@ -233,8 +233,8 @@ const deleteNote = async (note) => {
 
                                         <!-- Note Content -->
                                         <p
-                                            class="text-sm text-gray-700 dark:text-gray-300"
-                                            v-html="highlightSearch(note.type === 'document' ? note.content_preview : note.content, search)"
+                                            class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3"
+                                            v-html="highlightSearch(note.type === 'document' ? note.content_preview : (note.content?.substring(0, 200) + (note.content?.length > 200 ? '...' : '')), search)"
                                         ></p>
 
                                         <!-- Tags -->

@@ -18,7 +18,7 @@ class DashboardController extends Controller
                 $query->select('id', 'video_id', 'content');
             }])
             ->latest()
-            ->take(10)
+            ->take(5)
             ->get()
             ->map(function ($video) {
                 $video->total_notes_count = $video->notes_count + ($video->document && $video->document->content ? 1 : 0);

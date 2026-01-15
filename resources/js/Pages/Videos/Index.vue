@@ -1,7 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
-import { ref } from 'vue';
+import { ref, watch, computed } from 'vue';
 
 const props = defineProps({
     videos: Object,
@@ -11,6 +11,82 @@ const searchQuery = ref('');
 const searchResults = ref([]);
 const isSearching = ref(false);
 const searchError = ref(null);
+const activeTab = ref('saved');
+const savedVideosFilter = ref('');
+const urlDetected = ref(false);
+
+// Detect YouTube URL patterns
+const extractYouTubeId = (input) => {
+    const patterns = [
+        /(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([a-zA-Z0-9_-]{11})/,
+        /^([a-zA-Z0-9_-]{11})$/
+    ];
+    
+    for (const pattern of patterns) {
+        const match = input.match(pattern);
+        if (match) return match[1];
+    }
+    return null;
+};
+
+// Watch for URL in search query
+watch(searchQuery, (newVal) => {
+    urlDetected.value = !!extractYouTubeId(newVal);
+});
+
+const handleSearch = async () => {
+    const query = searchQuery.value.trim();
+    if (!query) return;
+
+    // Check if it's a YouTube URL
+    const videoId = extractYouTubeId(query);
+    
+    if (videoId) {
+        // Direct URL - fetch video info and save
+        await saveVideoFromUrl(videoId);
+        return;
+    }
+
+    if (activeTab.value === 'youtube') {
+        // YouTube search
+        await searchYouTube();
+    } else {
+        // Filter saved videos
+        savedVideosFilter.value = query;
+    }
+};
+
+const saveVideoFromUrl = async (videoId) => {
+    isSearching.value = true;
+    searchError.value = null;
+
+    try {
+        // First, get video info from YouTube API
+        const response = await fetch(route('videos.search') + '?q=' + encodeURIComponent(videoId));
+        
+        if (!response.ok) throw new Error('Failed to fetch video info');
+        
+        const results = await response.json();
+        const video = results.find(v => v.youtube_id === videoId);
+        
+        if (video) {
+            await saveAndWatch(video);
+        } else {
+            // If not found via search, create with minimal info
+            await saveAndWatch({
+                youtube_id: videoId,
+                title: 'YouTube Video',
+                thumbnail: `https://img.youtube.com/vi/${videoId}/mqdefault.jpg`,
+                channel_name: 'Unknown'
+            });
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        searchError.value = 'Failed to add video. Please try again.';
+    } finally {
+        isSearching.value = false;
+    }
+};
 
 const searchYouTube = async () => {
     if (!searchQuery.value.trim()) {
@@ -29,6 +105,7 @@ const searchYouTube = async () => {
         }
 
         searchResults.value = await response.json();
+        activeTab.value = 'youtube';
     } catch (error) {
         console.error('Search error:', error);
         searchError.value = 'Failed to search YouTube. Please try again.';
@@ -36,6 +113,16 @@ const searchYouTube = async () => {
         isSearching.value = false;
     }
 };
+
+const filteredVideos = computed(() => {
+    if (!savedVideosFilter.value) return props.videos.data;
+    
+    const filter = savedVideosFilter.value.toLowerCase();
+    return props.videos.data.filter(video => 
+        video.title.toLowerCase().includes(filter) ||
+        video.channel_name?.toLowerCase().includes(filter)
+    );
+});
 
 const saveAndWatch = async (video) => {
     try {
@@ -74,6 +161,8 @@ const deleteVideo = (videoId) => {
 const clearSearch = () => {
     searchQuery.value = '';
     searchResults.value = [];
+    savedVideosFilter.value = '';
+    urlDetected.value = false;
 };
 </script>
 
@@ -94,20 +183,20 @@ const clearSearch = () => {
                     <div class="flex gap-2">
                         <input
                             v-model="searchQuery"
-                            @keyup.enter="searchYouTube"
+                            @keyup.enter="handleSearch"
                             type="text"
-                            placeholder="Search YouTube videos..."
+                            placeholder="Search YouTube, paste a URL, or filter your videos..."
                             class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
                         />
                         <button
-                            @click="searchYouTube"
+                            @click="handleSearch"
                             :disabled="isSearching"
                             class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white rounded-lg transition-colors"
                         >
-                            {{ isSearching ? 'Searching...' : 'Search' }}
+                            {{ isSearching ? '...' : 'Search' }}
                         </button>
                         <button
-                            v-if="searchResults.length > 0"
+                            v-if="searchResults.length > 0 || savedVideosFilter"
                             @click="clearSearch"
                             class="px-4 py-2 bg-gray-200 dark:bg-gray-700 hover:bg-gray-300 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 rounded-lg transition-colors"
                         >
@@ -115,7 +204,32 @@ const clearSearch = () => {
                         </button>
                     </div>
 
+                    <!-- Tabs -->
+                    <div class="flex gap-4 mt-3 border-t border-gray-200 dark:border-gray-700 pt-3">
+                        <button
+                            @click="activeTab = 'youtube'"
+                            :class="activeTab === 'youtube' 
+                                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="pb-1 text-sm font-medium transition-colors"
+                        >
+                            YouTube Search
+                        </button>
+                        <button
+                            @click="activeTab = 'saved'"
+                            :class="activeTab === 'saved' 
+                                ? 'text-blue-600 dark:text-blue-400 border-b-2 border-blue-600 dark:border-blue-400' 
+                                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'"
+                            class="pb-1 text-sm font-medium transition-colors"
+                        >
+                            My Videos ({{ videos.total }})
+                        </button>
+                    </div>
+
                     <p v-if="searchError" class="text-red-500 text-sm mt-2">{{ searchError }}</p>
+                    <p v-if="urlDetected" class="text-green-600 dark:text-green-400 text-sm mt-2">
+                        YouTube URL detected! Click Search to add this video.
+                    </p>
                 </div>
 
                 <!-- Search Results -->
@@ -153,10 +267,16 @@ const clearSearch = () => {
                 </div>
 
                 <!-- Saved Videos -->
-                <div>
+                <div v-show="activeTab === 'saved' || searchResults.length === 0">
                     <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                        Saved Videos
-                        <span class="text-sm font-normal text-gray-500 dark:text-gray-400">({{ videos.total }})</span>
+                        <span v-if="savedVideosFilter">
+                            Results for "{{ savedVideosFilter }}"
+                            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">({{ filteredVideos.length }})</span>
+                        </span>
+                        <span v-else>
+                            Saved Videos
+                            <span class="text-sm font-normal text-gray-500 dark:text-gray-400">({{ videos.total }})</span>
+                        </span>
                     </h3>
 
                     <div v-if="videos.data.length === 0" class="bg-white dark:bg-gray-800 rounded-lg p-8 text-center border border-gray-200 dark:border-gray-700">
@@ -166,7 +286,7 @@ const clearSearch = () => {
 
                     <div v-else class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
                         <div
-                            v-for="video in videos.data"
+                            v-for="video in filteredVideos"
                             :key="video.id"
                             class="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden group"
                         >
