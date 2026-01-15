@@ -14,8 +14,15 @@ class VideoController extends Controller
         $videos = $request->user()
             ->videos()
             ->withCount('notes')
-            ->orderBy('updated_at', 'desc')
-            ->paginate(12);
+            ->with(['document' => function ($query) {
+                $query->select('id', 'video_id', 'content');
+            }])
+            ->latest()
+            ->paginate(12)
+            ->through(function ($video) {
+                $video->total_notes_count = $video->notes_count + ($video->document && $video->document->content ? 1 : 0);
+                return $video;
+            });
 
         return Inertia::render('Videos/Index', [
             'videos' => $videos,
@@ -26,8 +33,8 @@ class VideoController extends Controller
     {
         $query = $request->input('q');
 
-        if (!$query) {
-            return response()->json(['items' => []]);
+        if (empty($query)) {
+            return response()->json([]);
         }
 
         $apiKey = config('services.youtube.api_key');
@@ -36,24 +43,36 @@ class VideoController extends Controller
             'part' => 'snippet',
             'q' => $query,
             'type' => 'video',
-            'maxResults' => 12,
+            'maxResults' => 10,
             'key' => $apiKey,
         ]);
 
         if ($response->failed()) {
-            return response()->json(['items' => [], 'error' => 'YouTube API error'], 500);
+            return response()->json(['error' => 'YouTube API error'], 500);
         }
 
-        $items = collect($response->json('items'))->map(function ($item) {
-            return [
-                'youtube_id' => $item['id']['videoId'],
-                'title' => $item['snippet']['title'],
-                'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] ?? null,
-                'channel_name' => $item['snippet']['channelTitle'],
-            ];
-        });
+        $items = $response->json('items') ?? [];
 
-        return response()->json(['items' => $items]);
+        $results = collect($items)->map(function ($item) {
+            // Safely get videoId from nested structure
+            $videoId = $item['id']['videoId'] ?? $item['id'] ?? null;
+            
+            // Skip if no videoId (might be a channel or playlist)
+            if (!$videoId || !is_string($videoId)) {
+                return null;
+            }
+
+            return [
+                'youtube_id' => $videoId,
+                'title' => html_entity_decode($item['snippet']['title'] ?? 'Untitled'),
+                'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] 
+                    ?? $item['snippet']['thumbnails']['default']['url'] 
+                    ?? null,
+                'channel_name' => $item['snippet']['channelTitle'] ?? 'Unknown',
+            ];
+        })->filter()->values();
+
+        return response()->json($results);
     }
 
     public function store(Request $request)
@@ -61,7 +80,7 @@ class VideoController extends Controller
         $validated = $request->validate([
             'youtube_id' => 'required|string',
             'title' => 'required|string|max:255',
-            'thumbnail' => 'nullable|string',
+            'thumbnail' => 'nullable|url',
             'channel_name' => 'nullable|string|max:255',
         ]);
 
@@ -75,12 +94,13 @@ class VideoController extends Controller
 
     public function show(Request $request, Video $video)
     {
-        // Vérifier que la vidéo appartient à l'utilisateur
         if ($video->user_id !== $request->user()->id) {
             abort(403);
         }
 
-        $video->load(['notes.tags']);
+        $video->load(['notes' => function ($query) {
+            $query->with('tags')->orderBy('timestamp');
+        }]);
 
         return Inertia::render('Videos/Show', [
             'video' => $video,

@@ -14,8 +14,16 @@ const minWidth = 300;
 const maxWidth = 800;
 const isResizing = ref(false);
 
-// Mobile Quick Notes panel
-const showMobileQuickNotes = ref(false);
+// Threshold for collapsed mode
+const collapsedThreshold = 500;
+
+// Mobile/Collapsed Quick Notes panel
+const showQuickNotesPanel = ref(false);
+
+// Computed: should Quick Notes be collapsed into a button?
+const isQuickNotesCollapsed = computed(() => {
+    return videoWidth.value >= collapsedThreshold;
+});
 
 // Load saved width from localStorage
 onMounted(() => {
@@ -65,6 +73,11 @@ const newNoteContent = ref('');
 const currentTimestamp = ref(null);
 const isSavingNote = ref(false);
 const showQuickNotes = ref(true);
+
+// Edit Quick Note
+const editingNoteId = ref(null);
+const editingNoteContent = ref('');
+const editingNoteTimestamp = ref(null);
 
 // Tags
 const availableTags = ref([]);
@@ -172,12 +185,7 @@ const saveDocument = async () => {
     isSavingDocument.value = true;
 
     try {
-        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
-        
-        if (!csrfToken) {
-            console.error('CSRF token not found');
-            return;
-        }
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
         const response = await fetch(route('documents.store', props.video.id), {
             method: 'POST',
@@ -197,8 +205,6 @@ const saveDocument = async () => {
 
         if (response.ok) {
             lastSaved.value = new Date();
-        } else {
-            console.error('Save failed:', response.status, await response.text());
         }
     } catch (error) {
         console.error('Error saving document:', error);
@@ -257,6 +263,54 @@ const saveQuickNote = async () => {
     }
 };
 
+const startEditNote = (note) => {
+    editingNoteId.value = note.id;
+    editingNoteContent.value = note.content;
+    editingNoteTimestamp.value = note.timestamp;
+};
+
+const cancelEditNote = () => {
+    editingNoteId.value = null;
+    editingNoteContent.value = '';
+    editingNoteTimestamp.value = null;
+};
+
+const updateEditTimestamp = () => {
+    editingNoteTimestamp.value = getCurrentTime();
+};
+
+const saveEditNote = async () => {
+    if (!editingNoteContent.value.trim()) return;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        const response = await fetch(route('notes.update', editingNoteId.value), {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({
+                content: editingNoteContent.value,
+                timestamp: editingNoteTimestamp.value,
+            }),
+        });
+
+        const updatedNote = await response.json();
+        const index = notes.value.findIndex(n => n.id === editingNoteId.value);
+        if (index !== -1) {
+            notes.value[index] = updatedNote;
+        }
+        cancelEditNote();
+    } catch (error) {
+        console.error('Error updating note:', error);
+    }
+};
+
 const deleteNote = async (noteId) => {
     if (!confirm('Delete this quick note?')) return;
 
@@ -286,7 +340,7 @@ const toggleDocTag = (tagId) => {
     } else {
         selectedDocTags.value.splice(index, 1);
     }
-    autoSaveDocument();
+    saveDocument();
 };
 
 const createTag = async () => {
@@ -315,7 +369,7 @@ const createTag = async () => {
         selectedDocTags.value.push(tag.id);
         newTagName.value = '';
         showTagInput.value = false;
-        autoSaveDocument();
+        saveDocument();
     } catch (error) {
         console.error('Error creating tag:', error);
     }
@@ -357,8 +411,7 @@ const handleEditorClick = (event) => {
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                     </svg>
                 </Link>
-                <!-- <h2 class="font-medium text-gray-900 dark:text-gray-100 truncate"> -->
-                <h2 class="font-semibold text-xl text-gray-800 dark:text-gray-200 leading-tight">
+                <h2 class="font-medium text-gray-900 dark:text-gray-100 truncate">
                     {{ video.title }}
                 </h2>
             </div>
@@ -407,74 +460,104 @@ const handleEditorClick = (event) => {
                             </div>
                         </div>
 
-                        <!-- Quick Notes (scrollable) -->
-                        <div class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1 flex flex-col min-h-0 overflow-hidden">
-                            <button
-                                @click="showQuickNotes = !showQuickNotes"
-                                class="w-full px-4 py-3 flex items-center justify-between text-left flex-shrink-0"
-                            >
+                        <!-- Quick Notes: Inline (when not collapsed) -->
+                        <div 
+                            v-if="!isQuickNotesCollapsed"
+                            class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1 flex flex-col min-h-0 overflow-hidden"
+                        >
+                            <div class="px-4 py-3 flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
                                 <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
                                     Quick Notes
                                     <span class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">
                                         ({{ notes.length }})
                                     </span>
                                 </span>
-                                <svg
-                                    :class="{ 'rotate-180': showQuickNotes }"
-                                    class="w-4 h-4 text-gray-400 transition-transform"
-                                    fill="none"
-                                    stroke="currentColor"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+                            </div>
 
-                            <div v-show="showQuickNotes" class="border-t border-gray-200 dark:border-gray-700 flex-1 flex flex-col min-h-0 overflow-hidden">
-                                <!-- Add Quick Note -->
-                                <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-                                    <textarea
-                                        v-model="newNoteContent"
-                                        placeholder="Add a quick note..."
-                                        rows="2"
-                                        class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                                    ></textarea>
-                                    <div class="flex items-center justify-between mt-2">
-                                        <div class="flex items-center gap-2">
-                                            <button
-                                                @click="addTimestamp"
-                                                class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
-                                            >
-                                                + Timestamp
-                                            </button>
-                                            <span
-                                                v-if="currentTimestamp !== null"
-                                                class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                                            >
-                                                {{ formatTimestamp(currentTimestamp) }}
-                                                <button @click="clearTimestamp" class="hover:text-blue-900 dark:hover:text-blue-100">×</button>
-                                            </span>
-                                        </div>
+                            <!-- Add Quick Note -->
+                            <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                                <textarea
+                                    v-model="newNoteContent"
+                                    placeholder="Add a quick note..."
+                                    rows="2"
+                                    class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                                ></textarea>
+                                <div class="flex items-center justify-between mt-2">
+                                    <div class="flex items-center gap-2">
                                         <button
-                                            @click="saveQuickNote"
-                                            :disabled="isSavingNote || !newNoteContent.trim()"
-                                            class="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 transition-colors"
+                                            @click="addTimestamp"
+                                            class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
                                         >
-                                            {{ isSavingNote ? '...' : 'Add' }}
+                                            + Timestamp
                                         </button>
+                                        <span
+                                            v-if="currentTimestamp !== null"
+                                            class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                                        >
+                                            {{ formatTimestamp(currentTimestamp) }}
+                                            <button @click="clearTimestamp" class="hover:text-blue-900 dark:hover:text-blue-100">×</button>
+                                        </span>
                                     </div>
-                                </div>
-
-                                <!-- Quick Notes List (scrollable) -->
-                                <div class="flex-1 overflow-y-auto">
-                                    <div v-if="sortedNotes.length === 0" class="p-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-                                        No quick notes yet
-                                    </div>
-                                    <div
-                                        v-for="note in sortedNotes"
-                                        :key="note.id"
-                                        class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                    <button
+                                        @click="saveQuickNote"
+                                        :disabled="isSavingNote || !newNoteContent.trim()"
+                                        class="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 transition-colors"
                                     >
+                                        {{ isSavingNote ? '...' : 'Add' }}
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Quick Notes List (scrollable) -->
+                            <div class="flex-1 overflow-y-auto">
+                                <div v-if="sortedNotes.length === 0" class="p-4 text-sm text-gray-500 dark:text-gray-400 text-center">
+                                    No quick notes yet
+                                </div>
+                                <div
+                                    v-for="note in sortedNotes"
+                                    :key="note.id"
+                                    class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                >
+                                    <!-- Edit Mode -->
+                                    <div v-if="editingNoteId === note.id" class="space-y-2">
+                                        <textarea
+                                            v-model="editingNoteContent"
+                                            rows="2"
+                                            class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                                        ></textarea>
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex items-center gap-2">
+                                                <button
+                                                    @click="updateEditTimestamp"
+                                                    class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                                                >
+                                                    Update time
+                                                </button>
+                                                <span
+                                                    v-if="editingNoteTimestamp !== null"
+                                                    class="text-xs font-mono text-blue-600 dark:text-blue-400"
+                                                >
+                                                    {{ formatTimestamp(editingNoteTimestamp) }}
+                                                </span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <button
+                                                    @click="cancelEditNote"
+                                                    class="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                                >
+                                                    Cancel
+                                                </button>
+                                                <button
+                                                    @click="saveEditNote"
+                                                    class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                                                >
+                                                    Save
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <!-- View Mode -->
+                                    <div v-else>
                                         <button
                                             v-if="note.timestamp !== null"
                                             @click="seekTo(note.timestamp)"
@@ -485,16 +568,48 @@ const handleEditorClick = (event) => {
                                         <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                                             {{ note.content }}
                                         </p>
-                                        <button
-                                            @click="deleteNote(note.id)"
-                                            class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors mt-1"
-                                        >
-                                            Delete
-                                        </button>
+                                        <div class="flex items-center gap-3 mt-1">
+                                            <button
+                                                @click="startEditNote(note)"
+                                                class="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                @click="deleteNote(note.id)"
+                                                class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                            >
+                                                Delete
+                                            </button>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
+
+                        <!-- Quick Notes: Collapsed Button (when video is wide) -->
+                        <button
+                            v-if="isQuickNotesCollapsed"
+                            @click="showQuickNotesPanel = true"
+                            class="mt-4 w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
+                        >
+                            <span class="flex items-center gap-2">
+                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
+                                </svg>
+                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                                    Quick Notes
+                                </span>
+                            </span>
+                            <span class="flex items-center gap-2">
+                                <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
+                                    {{ notes.length }}
+                                </span>
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                </svg>
+                            </span>
+                        </button>
 
                         <!-- Resize Handle -->
                         <div
@@ -584,7 +699,6 @@ const handleEditorClick = (event) => {
                             <!-- Editor (scrollable) -->
                             <div @click="handleEditorClick" class="flex-1 overflow-y-auto">
                                 <TiptapEditor
-                                    :key="video.id"
                                     ref="editorRef"
                                     v-model="documentContent"
                                     @update:modelValue="autoSaveDocument"
@@ -656,7 +770,7 @@ const handleEditorClick = (event) => {
                         </div>
 
                         <!-- Editor -->
-                        <div @click="handleEditorClick">
+                        <div @click="handleEditorClick" class="min-h-[400px]">
                             <TiptapEditor
                                 ref="editorRef"
                                 v-model="documentContent"
@@ -668,7 +782,7 @@ const handleEditorClick = (event) => {
 
                     <!-- Mobile Quick Notes FAB Button -->
                     <button
-                        @click="showMobileQuickNotes = true"
+                        @click="showQuickNotesPanel = true"
                         class="fixed bottom-6 right-6 w-14 h-14 bg-blue-600 hover:bg-blue-700 text-white rounded-full shadow-lg flex items-center justify-center z-40 transition-colors"
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -678,109 +792,162 @@ const handleEditorClick = (event) => {
                             {{ notes.length }}
                         </span>
                     </button>
+                </div>
 
-                    <!-- Mobile Quick Notes Bottom Sheet -->
-                    <Teleport to="body">
-                        <Transition name="sheet">
+                <!-- QUICK NOTES PANEL (shared between collapsed desktop and mobile) -->
+                <Teleport to="body">
+                    <Transition name="sheet">
+                        <div
+                            v-if="showQuickNotesPanel"
+                            class="fixed inset-0 z-50"
+                        >
+                            <!-- Backdrop -->
                             <div
-                                v-if="showMobileQuickNotes"
-                                class="fixed inset-0 z-50"
+                                @click="showQuickNotesPanel = false"
+                                class="absolute inset-0 bg-black/50"
+                            ></div>
+
+                            <!-- Sheet - Right panel on desktop, bottom sheet on mobile -->
+                            <div 
+                                class="absolute bg-white dark:bg-gray-800 flex flex-col
+                                    lg:right-0 lg:top-0 lg:bottom-0 lg:w-[400px] lg:rounded-l-2xl
+                                    max-lg:bottom-0 max-lg:left-0 max-lg:right-0 max-lg:max-h-[70vh] max-lg:rounded-t-2xl"
                             >
-                                <!-- Backdrop -->
-                                <div
-                                    @click="showMobileQuickNotes = false"
-                                    class="absolute inset-0 bg-black/50"
-                                ></div>
+                                <!-- Handle (mobile only) -->
+                                <div class="lg:hidden flex justify-center py-3 flex-shrink-0">
+                                    <div class="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
+                                </div>
 
-                                <!-- Sheet -->
-                                <div class="absolute bottom-0 left-0 right-0 bg-white dark:bg-gray-800 rounded-t-2xl max-h-[70vh] flex flex-col">
-                                    <!-- Handle -->
-                                    <div class="flex justify-center py-3 flex-shrink-0">
-                                        <div class="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                                    </div>
+                                <!-- Header -->
+                                <div class="px-4 py-3 lg:py-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                                        Quick Notes ({{ notes.length }})
+                                    </h3>
+                                    <button
+                                        @click="showQuickNotesPanel = false"
+                                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                    >
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
 
-                                    <!-- Header -->
-                                    <div class="px-4 pb-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                                        <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                            Quick Notes ({{ notes.length }})
-                                        </h3>
+                                <!-- Add Quick Note -->
+                                <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
+                                    <textarea
+                                        v-model="newNoteContent"
+                                        placeholder="Add a quick note..."
+                                        rows="2"
+                                        class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                                    ></textarea>
+                                    <div class="flex items-center justify-between mt-2">
+                                        <div class="flex items-center gap-2">
+                                            <button
+                                                @click="addTimestamp"
+                                                class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
+                                            >
+                                                + Timestamp
+                                            </button>
+                                            <span
+                                                v-if="currentTimestamp !== null"
+                                                class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
+                                            >
+                                                {{ formatTimestamp(currentTimestamp) }}
+                                                <button @click="clearTimestamp" class="hover:text-blue-900 dark:hover:text-blue-100">×</button>
+                                            </span>
+                                        </div>
                                         <button
-                                            @click="showMobileQuickNotes = false"
-                                            class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                            @click="saveQuickNote"
+                                            :disabled="isSavingNote || !newNoteContent.trim()"
+                                            class="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 transition-colors"
                                         >
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
+                                            {{ isSavingNote ? '...' : 'Add' }}
                                         </button>
                                     </div>
+                                </div>
 
-                                    <!-- Add Quick Note -->
-                                    <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-                                        <textarea
-                                            v-model="newNoteContent"
-                                            placeholder="Add a quick note..."
-                                            rows="2"
-                                            class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                                        ></textarea>
-                                        <div class="flex items-center justify-between mt-2">
-                                            <div class="flex items-center gap-2">
-                                                <button
-                                                    @click="addTimestamp"
-                                                    class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
-                                                >
-                                                    + Timestamp
-                                                </button>
-                                                <span
-                                                    v-if="currentTimestamp !== null"
-                                                    class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                                                >
-                                                    {{ formatTimestamp(currentTimestamp) }}
-                                                    <button @click="clearTimestamp">×</button>
-                                                </span>
-                                            </div>
-                                            <button
-                                                @click="saveQuickNote"
-                                                :disabled="isSavingNote || !newNoteContent.trim()"
-                                                class="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500"
-                                            >
-                                                {{ isSavingNote ? '...' : 'Add' }}
-                                            </button>
-                                        </div>
+                                <!-- Notes List -->
+                                <div class="flex-1 overflow-y-auto">
+                                    <div v-if="sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
+                                        No quick notes yet
                                     </div>
-
-                                    <!-- Notes List -->
-                                    <div class="flex-1 overflow-y-auto">
-                                        <div v-if="sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                                            No quick notes yet
+                                    <div
+                                        v-for="note in sortedNotes"
+                                        :key="note.id"
+                                        class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                                    >
+                                        <!-- Edit Mode -->
+                                        <div v-if="editingNoteId === note.id" class="space-y-2">
+                                            <textarea
+                                                v-model="editingNoteContent"
+                                                rows="2"
+                                                class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500 resize-none"
+                                            ></textarea>
+                                            <div class="flex items-center justify-between">
+                                                <div class="flex items-center gap-2">
+                                                    <button
+                                                        @click="updateEditTimestamp"
+                                                        class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
+                                                    >
+                                                        Update time
+                                                    </button>
+                                                    <span
+                                                        v-if="editingNoteTimestamp !== null"
+                                                        class="text-xs font-mono text-blue-600 dark:text-blue-400"
+                                                    >
+                                                        {{ formatTimestamp(editingNoteTimestamp) }}
+                                                    </span>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <button
+                                                        @click="cancelEditNote"
+                                                        class="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
+                                                    >
+                                                        Cancel
+                                                    </button>
+                                                    <button
+                                                        @click="saveEditNote"
+                                                        class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
+                                                    >
+                                                        Save
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
-                                        <div
-                                            v-for="note in sortedNotes"
-                                            :key="note.id"
-                                            class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                                        >
+                                        <!-- View Mode -->
+                                        <div v-else>
                                             <button
                                                 v-if="note.timestamp !== null"
-                                                @click="seekTo(note.timestamp); showMobileQuickNotes = false"
-                                                class="text-xs font-mono text-blue-600 dark:text-blue-400"
+                                                @click="seekTo(note.timestamp)"
+                                                class="text-xs font-mono text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
                                             >
                                                 {{ formatTimestamp(note.timestamp) }}
                                             </button>
                                             <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
                                                 {{ note.content }}
                                             </p>
-                                            <button
-                                                @click="deleteNote(note.id)"
-                                                class="text-xs text-gray-400 hover:text-red-500 mt-1"
-                                            >
-                                                Delete
-                                            </button>
+                                            <div class="flex items-center gap-3 mt-1">
+                                                <button
+                                                    @click="startEditNote(note)"
+                                                    class="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
+                                                >
+                                                    Edit
+                                                </button>
+                                                <button
+                                                    @click="deleteNote(note.id)"
+                                                    class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
+                                                >
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </Transition>
-                    </Teleport>
-                </div>
+                        </div>
+                    </Transition>
+                </Teleport>
             </div>
         </div>
     </AuthenticatedLayout>
@@ -805,7 +972,7 @@ const handleEditorClick = (event) => {
     border: none;
 }
 
-/* Bottom Sheet Transition */
+/* Panel Transitions */
 .sheet-enter-active,
 .sheet-leave-active {
     transition: all 0.3s ease;
@@ -821,8 +988,19 @@ const handleEditorClick = (event) => {
     opacity: 0;
 }
 
-.sheet-enter-from > div:last-child,
-.sheet-leave-to > div:last-child {
-    transform: translateY(100%);
+/* Mobile: slide from bottom */
+@media (max-width: 1023px) {
+    .sheet-enter-from > div:last-child,
+    .sheet-leave-to > div:last-child {
+        transform: translateY(100%);
+    }
+}
+
+/* Desktop: slide from right */
+@media (min-width: 1024px) {
+    .sheet-enter-from > div:last-child,
+    .sheet-leave-to > div:last-child {
+        transform: translateX(100%);
+    }
 }
 </style>

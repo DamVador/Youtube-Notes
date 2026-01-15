@@ -11,20 +11,56 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
-        $videos = $user->videos()
+        // Recent videos with note counts (quick notes + documents)
+        $recentVideos = $user->videos()
             ->withCount('notes')
-            ->orderBy('updated_at', 'desc')
+            ->with(['document' => function ($query) {
+                $query->select('id', 'video_id', 'content');
+            }])
+            ->latest()
             ->take(10)
-            ->get();
+            ->get()
+            ->map(function ($video) {
+                $video->total_notes_count = $video->notes_count + ($video->document && $video->document->content ? 1 : 0);
+                return $video;
+            });
 
-        $recentNotes = $user->notes()
-            ->with(['video', 'tags'])
-            ->orderBy('updated_at', 'desc')
+        // Recent quick notes
+        $recentQuickNotes = $user->notes()
+            ->with(['video:id,title,thumbnail,youtube_id', 'tags:id,name,color'])
+            ->latest()
             ->take(5)
-            ->get();
+            ->get()
+            ->map(function ($note) {
+                $note->type = 'quick_note';
+                return $note;
+            });
+
+        // Recent documents with content
+        $recentDocuments = $user->documents()
+            ->whereNotNull('content')
+            ->where('content', '!=', '')
+            ->with(['video:id,title,thumbnail,youtube_id', 'tags:id,name,color'])
+            ->latest('updated_at')
+            ->take(5)
+            ->get()
+            ->map(function ($doc) {
+                $doc->type = 'document';
+                // Create a preview of the content (strip HTML)
+                $doc->content_preview = \Illuminate\Support\Str::limit(strip_tags($doc->content), 150);
+                return $doc;
+            });
+
+        // Merge and sort by date
+        $recentNotes = $recentQuickNotes->concat($recentDocuments)
+            ->sortByDesc(function ($item) {
+                return $item->updated_at ?? $item->created_at;
+            })
+            ->take(5)
+            ->values();
 
         return Inertia::render('Dashboard', [
-            'videos' => $videos,
+            'recentVideos' => $recentVideos,
             'recentNotes' => $recentNotes,
         ]);
     }

@@ -26,4 +26,9 @@ class Tag extends Model
     {
         return $this->belongsToMany(Note::class)->withTimestamps();
     }
+
+    public function documents()
+    {
+        return $this->belongsToMany(Document::class);
+    }
 }

@@ -418,21 +418,22 @@ defineExpose({
         </div>
 
         <!-- Editor Content -->
-        <div class="bg-white dark:bg-gray-900">
-            <EditorContent :editor="editor" />
+        <div class="bg-white dark:bg-gray-900 flex-1 flex flex-col">
+            <EditorContent :editor="editor" class="flex-1" />
         </div>
     </div>
 </template>
 
 <style>
-.tiptap-editor .ProseMirror {
-    min-height: 400px;
+.tiptap-editor {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
 }
 
-@media (min-width: 1024px) {
-    .tiptap-editor .ProseMirror {
-        min-height: 500px;
-    }
+.tiptap-editor .ProseMirror {
+    flex: 1;
+    min-height: 300px;
 }
 
 .tiptap-editor .ProseMirror p.is-editor-empty:first-child::before {
