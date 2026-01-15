@@ -109,6 +109,11 @@ class NoteController extends Controller
             'tags.*' => 'exists:tags,id',
         ]);
 
+        $video = \App\Models\Video::find($validated['video_id']);
+        if ($video->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
         $note = $request->user()->notes()->create([
             'video_id' => $validated['video_id'],
             'content' => $validated['content'],

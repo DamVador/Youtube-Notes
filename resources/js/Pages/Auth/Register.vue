@@ -145,6 +145,14 @@ const submit = () => {
                         </a>
                     </form>
 
+                    <!-- Legal Links -->
+                    <div class="mt-6 text-center text-xs text-gray-500 dark:text-gray-400">
+                        By signing in, you agree to our
+                        <Link :href="route('legal.terms')" class="text-blue-600 dark:text-blue-400 hover:underline">Terms of Service</Link>
+                        and
+                        <Link :href="route('legal.privacy')" class="text-blue-600 dark:text-blue-400 hover:underline">Privacy Policy</Link>.
+                    </div>
+
                     <p class="mt-6 text-center text-sm text-slate-600 dark:text-slate-400">
                         Already have an account?
                         <Link :href="route('login')" class="text-blue-600 dark:text-blue-400 hover:underline font-medium">
