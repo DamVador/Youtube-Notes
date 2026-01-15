@@ -15,6 +15,10 @@ class DocumentController extends Controller
         }
 
         $document = $video->document;
+        
+        if ($document) {
+            $document->load('tags');
+        }
 
         return response()->json($document);
     }

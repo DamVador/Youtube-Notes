@@ -11,7 +11,7 @@ const props = defineProps({
 });
 
 const search = ref(props.filters.search || '');
-const selectedTag = ref(props.filters.tag || '');
+const selectedTag = ref(props.filters.tag ? props.filters.tag.toString() : '');
 const selectedVideo = ref(props.filters.video || '');
 
 let searchTimeout = null;
@@ -116,7 +116,7 @@ const deleteNote = async (note) => {
                             class="rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500"
                         >
                             <option value="">All Tags</option>
-                            <option v-for="tag in tags" :key="tag.id" :value="tag.id">
+                            <option v-for="tag in tags" :key="tag.id" :value="tag.id.toString()">
                                 {{ tag.name }} ({{ (tag.notes_count || 0) + (tag.documents_count || 0) }})
                             </option>
                         </select>
