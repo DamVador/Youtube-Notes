@@ -6,6 +6,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\VideoController;
 use App\Http\Controllers\DocumentController;
+use App\Http\Controllers\Auth\GoogleController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -44,7 +45,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Documents
     Route::get('/videos/{video}/document', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/videos/{video}/document', [DocumentController::class, 'store'])->name('documents.store');
+
 });
+
+// Google OAuth routes
+Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('auth.google');
+Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
 
 // Routes profil (Breeze)
 Route::middleware('auth')->group(function () {
