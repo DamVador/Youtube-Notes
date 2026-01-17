@@ -43,9 +43,11 @@
         @inertiaHead
 
         <!-- Google Analytics -->
-        @if(config('services.google.analytics_id'))
-        <meta name="analytics-id" content="{{ config('services.google.analytics_id') }}">
-        @endif
+        @production
+            @if(config('services.google.analytics_id'))
+            <meta name="analytics-id" content="{{ config('services.google.analytics_id') }}">
+            @endif
+        @endproduction
     </head>
     <body class="font-sans antialiased">
         @inertia
