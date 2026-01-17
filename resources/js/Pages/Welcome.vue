@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import Logo from '@/Components/Logo.vue';
 
 defineProps({
     canLogin: Boolean,
@@ -16,13 +17,9 @@ defineProps({
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
                     <div class="flex items-center gap-2">
-                        <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                            <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                            </svg>
-                        </div>
-                        <span class="font-semibold text-white text-lg">VidNotes</span>
+                        <!-- <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center"> -->
+                            <Logo size="md" />
+                        <!-- </div> -->
                     </div>
 
                     <div v-if="canLogin" class="flex items-center gap-3">
@@ -129,19 +126,18 @@ defineProps({
         </div>
 
         <!-- Footer -->
-        <footer class="border-t border-slate-700/50">
+        <footer class="bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 mt-auto">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-                <div class="flex flex-col sm:flex-row justify-between items-center gap-4">
-                    <div class="flex items-center gap-2 text-slate-500 text-sm">
-                        <div class="w-6 h-6 bg-gradient-to-br from-blue-500 to-blue-600 rounded flex items-center justify-center">
-                            <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            </svg>
-                        </div>
-                        <span>VidNotes</span>
-                    </div>
-                    <div class="text-slate-500 text-sm">
-                        © {{ new Date().getFullYear() }} All rights reserved.
+                <div class="flex flex-col sm:flex-row items-center justify-between gap-4">
+                    <Logo size="sm" />
+                    <div class="flex items-center gap-6 text-sm text-slate-500 dark:text-slate-400">
+                        <Link :href="route('legal.terms')" class="hover:text-slate-700 dark:hover:text-slate-200">
+                            Terms
+                        </Link>
+                        <Link :href="route('legal.privacy')" class="hover:text-slate-700 dark:hover:text-slate-200">
+                            Privacy
+                        </Link>
+                        <span>© {{ new Date().getFullYear() }} VidNotes</span>
                     </div>
                 </div>
             </div>

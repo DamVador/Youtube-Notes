@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link, useForm } from '@inertiajs/vue3';
+import Logo from '@/Components/Logo.vue';
 
 const form = useForm({
     name: '',
@@ -22,14 +23,8 @@ const submit = () => {
         <!-- Simple Header -->
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                <Link :href="route('welcome')" class="flex items-center gap-2 w-fit">
-                    <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center">
-                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <span class="font-semibold text-slate-900 dark:text-white text-lg">VidNotes</span>
+                <Link :href="route('welcome')">
+                    <Logo size="md" />
                 </Link>
             </div>
         </div>
