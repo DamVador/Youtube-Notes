@@ -43,17 +43,9 @@
         @inertiaHead
 
         <!-- Google Analytics -->
-        @production
-            @if(config('services.google.analytics_id'))
-            <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google.analytics_id') }}"></script>
-            <script>
-                window.dataLayer = window.dataLayer || [];
-                function gtag(){dataLayer.push(arguments);}
-                gtag('js', new Date());
-                gtag('config', '{{ config('services.google.analytics_id') }}');
-            </script>
-            @endif
-        @endproduction
+        @if(config('services.google.analytics_id'))
+        <meta name="analytics-id" content="{{ config('services.google.analytics_id') }}">
+        @endif
     </head>
     <body class="font-sans antialiased">
         @inertia

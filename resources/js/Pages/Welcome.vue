@@ -1,6 +1,7 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
 import Logo from '@/Components/Logo.vue';
+import CookieConsent from '@/Components/CookieConsent.vue';
 
 defineProps({
     canLogin: Boolean,
@@ -160,5 +161,8 @@ defineProps({
                 </div>
             </div>
         </footer>
+
+        <!-- Cookie Consent -->
+        <CookieConsent />
     </div>
 </template>
