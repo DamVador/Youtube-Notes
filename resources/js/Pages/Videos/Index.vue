@@ -11,7 +11,7 @@ const searchQuery = ref('');
 const searchResults = ref([]);
 const isSearching = ref(false);
 const searchError = ref(null);
-const activeTab = ref('saved');
+const activeTab = ref('youtube');
 const savedVideosFilter = ref('');
 const urlDetected = ref(false);
 
