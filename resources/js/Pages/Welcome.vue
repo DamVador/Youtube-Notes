@@ -53,33 +53,51 @@ defineProps({
         </nav>
 
         <!-- Hero Section -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-32">
-            <div class="text-center">
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-bold text-white mb-6">
-                    Don't just watch, learn ! Take notes while watching
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-blue-600">
-                        YouTube videos
-                    </span>
-                </h1>
-                <p class="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto mb-10">
-                    Search videos, take precise notes with automatic timestamps, and build your personal knowledge library.
-                </p>
+        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <div class="flex flex-col items-center text-center">
+                
+                <div class="mb-10 animate-fade-in">
+                    <img 
+                        src="/favicon.svg" 
+                        alt="VidNotes Logo" 
+                        class="w-20 h-20 sm:w-24 sm:h-24 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]"
+                    />
+                </div>
 
-                <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                <div class="space-y-6">
+                    <h1 class="text-4xl sm:text-6xl lg:text-7xl font-extrabold tracking-tight text-white leading-tight">
+                        Don't just watch, <span class="text-blue-500">learn!</span><br class="hidden sm:block">
+                        Take notes while watching
+                        <span class="block mt-2 text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500">
+                            YouTube videos
+                        </span>
+                    </h1>
+                    
+                    <p class="text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
+                        Search videos, take precise notes with automatic timestamps, and build your personal knowledge library.
+                    </p>
+                </div>
+
+                <div class="mt-12 flex flex-col sm:flex-row items-center gap-5 w-full sm:w-auto">
                     <Link
                         v-if="canRegister"
                         :href="route('register')"
-                        class="px-8 py-3 text-base font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                        class="w-full sm:w-auto px-10 py-4 text-lg font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/20 transform transition hover:-translate-y-1 active:scale-95"
                     >
                         Get started for free
                     </Link>
+                    
                     <Link
                         v-if="canLogin && !$page.props.auth.user"
                         :href="route('login')"
-                        class="px-8 py-3 text-base font-medium border border-slate-600 hover:border-slate-500 text-slate-300 hover:text-white rounded-lg transition-colors"
+                        class="w-full sm:w-auto px-10 py-4 text-lg font-semibold border border-slate-700 bg-slate-900/50 hover:bg-slate-800 text-slate-300 hover:text-white rounded-xl backdrop-blur-sm transition-all"
                     >
                         Sign in to your account
                     </Link>
+                </div>
+
+                <div class="absolute top-0 -z-10 h-full w-full opacity-20 overflow-hidden">
+                    <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600 rounded-full blur-[120px]"></div>
                 </div>
             </div>
         </div>
