@@ -40,6 +40,7 @@ class SubscriptionController extends Controller
         $user = $request->user();
 
         $checkout = $user->newSubscription('premium', $request->price_id)
+            ->allowPromotionCodes()
             ->checkout([
                 'success_url' => route('subscription.success') . '?session_id={CHECKOUT_SESSION_ID}',
                 'cancel_url' => route('subscription.pricing'),
