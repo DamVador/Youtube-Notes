@@ -20,6 +20,11 @@ class TagController extends Controller
 
     public function store(Request $request)
     {
+        // Check if user can create more tags
+        if (!$request->user()->canCreateTag()) {
+            return back()->with('error', 'You have reached the maximum number of tags for your plan. Upgrade to Premium for unlimited tags.');
+        }
+
         $validated = $request->validate([
             'name' => 'required|string|max:50',
             'color' => 'nullable|string|size:7|regex:/^#[0-9A-Fa-f]{6}$/',

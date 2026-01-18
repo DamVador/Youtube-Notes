@@ -45,4 +45,9 @@ return [
         'redirect' => env('GOOGLE_REDIRECT_URI', '/auth/google/callback'),
         'analytics_id' => env('GOOGLE_ANALYTICS_ID'),
     ],
+
+    'stripe' => [
+        'monthly_price_id' => env('STRIPE_MONTHLY_PRICE_ID'),
+        'yearly_price_id' => env('STRIPE_YEARLY_PRICE_ID'),
+    ],
 ];

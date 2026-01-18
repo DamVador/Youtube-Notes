@@ -32,7 +32,22 @@ class HandleInertiaRequests extends Middleware
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user(),
+                'user' => $request->user() ? [
+                    ...$request->user()->toArray(),
+                    'isPremium' => $request->user()->isPremium(),
+                    'canExportPdf' => $request->user()->canExportPdf(),
+                    'limits' => [
+                        'maxVideos' => $request->user()->maxVideos(),
+                        'maxNotesPerVideo' => $request->user()->maxNotesPerVideo(),
+                        'maxTags' => $request->user()->maxTags(),
+                        'videosCount' => $request->user()->videos()->count(),
+                        'tagsCount' => $request->user()->tags()->count(),
+                    ],
+                ] : null,
+            ],
+            'flash' => [
+                'error' => fn () => $request->session()->get('error'),
+                'success' => fn () => $request->session()->get('success'),
             ],
         ];
     }

@@ -35,6 +35,9 @@ const showingNavigationDropdown = ref(false);
                             <NavLink :href="route('notes.index')" :active="route().current('notes.*')">
                                 Notes
                             </NavLink>
+                            <NavLink :href="route('subscription.pricing')" :active="route().current('subscription.*')">
+                                Pricing
+                            </NavLink>
                         </div>
                     </div>
 
@@ -61,6 +64,19 @@ const showingNavigationDropdown = ref(false);
                             <template #content>
                                 <DropdownLink :href="route('profile.edit')">
                                     Profile
+                                </DropdownLink>
+                                <DropdownLink 
+                                    v-if="$page.props.auth.user.isPremium" 
+                                    :href="route('subscription.billing')"
+                                >
+                                    Manage Subscription
+                                </DropdownLink>
+                                <DropdownLink 
+                                    v-else 
+                                    :href="route('subscription.pricing')" 
+                                    class="text-blue-600 dark:text-blue-400"
+                                >
+                                    ⭐ Upgrade to Premium
                                 </DropdownLink>
                                 <DropdownLink :href="route('logout')" method="post" as="button">
                                     Log Out
@@ -108,6 +124,9 @@ const showingNavigationDropdown = ref(false);
                     <ResponsiveNavLink :href="route('notes.index')" :active="route().current('notes.*')">
                         Notes
                     </ResponsiveNavLink>
+                    <ResponsiveNavLink :href="route('subscription.pricing')" :active="route().current('subscription.*')">
+                        Pricing
+                    </ResponsiveNavLink>
                 </div>
 
                 <div class="py-3 border-t border-slate-200 dark:border-slate-700">
@@ -121,6 +140,19 @@ const showingNavigationDropdown = ref(false);
                     </div>
                     <ResponsiveNavLink :href="route('profile.edit')">
                         Profile
+                    </ResponsiveNavLink>
+                    <ResponsiveNavLink 
+                        v-if="$page.props.auth.user.isPremium" 
+                        :href="route('subscription.billing')"
+                    >
+                        Manage Subscription
+                    </ResponsiveNavLink>
+                    <ResponsiveNavLink 
+                        v-else 
+                        :href="route('subscription.pricing')"
+                        class="text-blue-600 dark:text-blue-400"
+                    >
+                        ⭐ Upgrade to Premium
                     </ResponsiveNavLink>
                     <ResponsiveNavLink :href="route('logout')" method="post" as="button">
                         Log Out

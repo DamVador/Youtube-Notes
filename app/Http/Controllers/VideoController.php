@@ -77,6 +77,11 @@ class VideoController extends Controller
 
     public function store(Request $request)
     {
+        // Check if user can add more videos
+        if (!$request->user()->canAddVideo()) {
+            return back()->with('error', 'You have reached the maximum number of videos for your plan. Upgrade to Premium for unlimited videos.');
+        }
+
         $validated = $request->validate([
             'youtube_id' => 'required|string',
             'title' => 'required|string|max:255',

@@ -8,6 +8,8 @@ use App\Http\Controllers\VideoController;
 use App\Http\Controllers\DocumentController;
 use App\Http\Controllers\Auth\GoogleController;
 use App\Http\Controllers\LegalController;
+use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\WebhookController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -47,6 +49,10 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::get('/videos/{video}/document', [DocumentController::class, 'show'])->name('documents.show');
     Route::post('/videos/{video}/document', [DocumentController::class, 'store'])->name('documents.store');
 
+    // Subscription
+    Route::post('/subscription/checkout', [SubscriptionController::class, 'checkout'])->name('subscription.checkout');
+    Route::get('/subscription/success', [SubscriptionController::class, 'success'])->name('subscription.success');
+    Route::get('/billing-portal', [SubscriptionController::class, 'billingPortal'])->name('subscription.billing');
 });
 
 // Legal
@@ -56,6 +62,10 @@ Route::get('/privacy', [LegalController::class, 'privacy'])->name('legal.privacy
 // Google OAuth routes
 Route::get('/auth/google', [GoogleController::class, 'redirect'])->name('auth.google');
 Route::get('/auth/google/callback', [GoogleController::class, 'callback']);
+
+Route::get('/pricing', [SubscriptionController::class, 'pricing'])->name('subscription.pricing');
+
+Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook'])->name('cashier.webhook');
 
 // Routes profil (Breeze)
 Route::middleware('auth')->group(function () {
