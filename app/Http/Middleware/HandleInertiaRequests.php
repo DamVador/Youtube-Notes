@@ -29,19 +29,27 @@ class HandleInertiaRequests extends Middleware
      */
     public function share(Request $request): array
     {
+        $user = $request->user();
+    
         return [
             ...parent::share($request),
             'auth' => [
-                'user' => $request->user() ? [
-                    ...$request->user()->toArray(),
-                    'isPremium' => $request->user()->isPremium(),
-                    'canExportPdf' => $request->user()->canExportPdf(),
+                'user' => $user ? [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'email' => $user->email,
+                    'isPremium' => $user->isPremium(),
+                    'canExportPdf' => $user->canExportPdf(),
                     'limits' => [
-                        'maxVideos' => $request->user()->maxVideos(),
-                        'maxNotesPerVideo' => $request->user()->maxNotesPerVideo(),
-                        'maxTags' => $request->user()->maxTags(),
-                        'videosCount' => $request->user()->videos()->count(),
-                        'tagsCount' => $request->user()->tags()->count(),
+                        'maxVideos' => $user->maxVideos(),
+                        'maxNotesPerVideo' => $user->maxNotesPerVideo(),
+                        'maxTags' => $user->maxTags(),
+                        'videosCount' => $user->videos()->count(),
+                        'tagsCount' => $user->tags()->count(),
+                        'remainingVideos' => $user->remainingVideos(),
+                        'remainingTags' => $user->remainingTags(),
+                        'canAddVideo' => $user->canAddVideo(),
+                        'canCreateTag' => $user->canCreateTag(),
                     ],
                 ] : null,
             ],

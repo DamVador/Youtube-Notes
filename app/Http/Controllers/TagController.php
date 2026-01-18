@@ -22,7 +22,10 @@ class TagController extends Controller
     {
         // Check if user can create more tags
         if (!$request->user()->canCreateTag()) {
-            return back()->with('error', 'You have reached the maximum number of tags for your plan. Upgrade to Premium for unlimited tags.');
+            return response()->json([
+                'error' => 'limit',
+                'message' => 'You have reached the maximum of ' . $request->user()->maxTags() . ' tags. Upgrade to Premium for unlimited tags.'
+            ], 403);
         }
 
         $validated = $request->validate([

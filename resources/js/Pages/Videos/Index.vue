@@ -2,6 +2,11 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed } from 'vue';
+import UpgradeBanner from '@/Components/UpgradeBanner.vue';
+import LimitWarning from '@/Components/LimitWarning.vue';
+import { usePage } from '@inertiajs/vue3';
+
+const page = usePage();
 
 const props = defineProps({
     videos: Object,
@@ -124,8 +129,12 @@ const filteredVideos = computed(() => {
     );
 });
 
+const limitError = ref(null);
+
 const saveAndWatch = async (video) => {
     try {
+        limitError.value = null;
+        
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content 
             || document.head.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -141,12 +150,17 @@ const saveAndWatch = async (video) => {
             body: JSON.stringify(video),
         });
 
+        const data = await response.json();
+
         if (!response.ok) {
+            if (data.error === 'limit') {
+                limitError.value = data.message;
+                return;
+            }
             throw new Error('Failed to save video');
         }
 
-        const savedVideo = await response.json();
-        router.visit(route('videos.show', savedVideo.id));
+        router.visit(route('videos.show', data.id));
     } catch (error) {
         console.error('Error saving video:', error);
         alert('Failed to save video. Please try again.');
@@ -178,6 +192,38 @@ const clearSearch = () => {
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Limit Error Message -->
+                <div 
+                    v-if="limitError" 
+                    class="mb-4 p-4 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-lg"
+                >
+                    <div class="flex items-center gap-3">
+                        <span class="text-red-500 text-xl">⚠️</span>
+                        <p class="text-red-700 dark:text-red-300 flex-1">{{ limitError }}</p>
+                        <Link 
+                            :href="route('subscription.pricing')" 
+                            class="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700"
+                        >
+                            Upgrade to Premium
+                        </Link>
+                    </div>
+                </div>
+
+                <!-- Upgrade Banner -->
+                <UpgradeBanner 
+                    v-if="!$page.props.auth.user.isPremium && $page.props.auth.user.limits.remainingVideos <= 3"
+                    message="You're running low on video slots. Upgrade for unlimited videos!"
+                    class="mb-6"
+                />
+
+                <!-- Limit Warning -->
+                <LimitWarning
+                    :current="$page.props.auth.user.limits.videosCount"
+                    :max="$page.props.auth.user.limits.maxVideos"
+                    type="videos"
+                    class="mb-4"
+                />
+
                 <!-- Search Bar -->
                 <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
                     <div class="flex gap-2">

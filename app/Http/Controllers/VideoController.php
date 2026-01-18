@@ -79,7 +79,10 @@ class VideoController extends Controller
     {
         // Check if user can add more videos
         if (!$request->user()->canAddVideo()) {
-            return back()->with('error', 'You have reached the maximum number of videos for your plan. Upgrade to Premium for unlimited videos.');
+            return response()->json([
+                'error' => 'limit',
+                'message' => 'You have reached the maximum of ' . $request->user()->maxVideos() . ' videos. Upgrade to Premium for unlimited videos.'
+            ], 403);
         }
 
         $validated = $request->validate([

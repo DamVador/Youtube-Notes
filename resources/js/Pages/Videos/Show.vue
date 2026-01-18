@@ -15,6 +15,8 @@ const minWidth = 300;
 const maxWidth = 800;
 const isResizing = ref(false);
 
+const limitError = ref(null);
+
 // Threshold for collapsed mode
 const collapsedThreshold = 500;
 
@@ -233,6 +235,7 @@ const saveQuickNote = async () => {
     if (!newNoteContent.value.trim()) return;
 
     isSavingNote.value = true;
+    limitError.value = null;
 
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
@@ -253,8 +256,17 @@ const saveQuickNote = async () => {
             }),
         });
 
-        const note = await response.json();
-        notes.value.unshift(note);
+        const data = await response.json();
+
+        if (!response.ok) {
+            if (data.error === 'limit') {
+                limitError.value = data.message;
+                return;
+            }
+            throw new Error('Failed to save note');
+        }
+
+        notes.value.unshift(data);
         newNoteContent.value = '';
         currentTimestamp.value = null;
     } catch (error) {
@@ -347,6 +359,8 @@ const toggleDocTag = (tagId) => {
 const createTag = async () => {
     if (!newTagName.value.trim()) return;
 
+    limitError.value = null;
+
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
 
@@ -365,9 +379,18 @@ const createTag = async () => {
             }),
         });
 
-        const tag = await response.json();
-        availableTags.value.push(tag);
-        selectedDocTags.value.push(tag.id);
+        const data = await response.json();
+
+        if (!response.ok) {
+            if (data.error === 'limit') {
+                limitError.value = data.message;
+                return;
+            }
+            throw new Error('Failed to create tag');
+        }
+
+        availableTags.value.push(data);
+        selectedDocTags.value.push(data.id);
         newTagName.value = '';
         showTagInput.value = false;
         saveDocument();
@@ -484,6 +507,30 @@ const exportToPdf = () => {
                             <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">
                                 {{ video.channel_name }}
                             </p>
+                        </div>
+
+                        <!-- Limit Error -->
+                        <div 
+                            v-if="limitError" 
+                            class="mt-3 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-lg"
+                        >
+                            <div class="flex items-start gap-2">
+                                <span class="text-red-500 flex-shrink-0">⚠️</span>
+                                <div class="flex-1 min-w-0">
+                                    <p class="text-sm text-red-700 dark:text-red-300">{{ limitError }}</p>
+                                    <Link 
+                                        :href="route('subscription.pricing')" 
+                                        class="inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
+                                    >
+                                        Upgrade to Premium
+                                    </Link>
+                                </div>
+                                <button @click="limitError = null" class="text-red-400 hover:text-red-600">
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
                         </div>
 
                         <!-- Width Slider -->

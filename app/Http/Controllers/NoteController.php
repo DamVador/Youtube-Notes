@@ -114,8 +114,12 @@ class NoteController extends Controller
             abort(403);
         }
 
+        // Check if user can add more notes to this video
         if (!$request->user()->canAddNoteToVideo($validated['video_id'])) {
-            return back()->with('error', 'You have reached the maximum number of notes for this video. Upgrade to Premium for unlimited notes.');
+            return response()->json([
+                'error' => 'limit',
+                'message' => 'You have reached the maximum of ' . $request->user()->maxNotesPerVideo() . ' quick notes for this video. Upgrade to Premium for unlimited notes.'
+            ], 403);
         }
 
         $note = $request->user()->notes()->create([

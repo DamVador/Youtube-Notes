@@ -82,7 +82,9 @@ class User extends Authenticatable
      */
     public function maxVideos(): int
     {
-        return $this->isPremium() ? PHP_INT_MAX : 5;
+        return $this->isPremium() 
+            ? config('limits.premium.videos') 
+            : config('limits.free.videos');
     }
 
     /**
@@ -90,7 +92,9 @@ class User extends Authenticatable
      */
     public function maxNotesPerVideo(): int
     {
-        return $this->isPremium() ? PHP_INT_MAX : 10;
+        return $this->isPremium() 
+            ? config('limits.premium.notes_per_video') 
+            : config('limits.free.notes_per_video');
     }
 
     /**
@@ -98,7 +102,9 @@ class User extends Authenticatable
      */
     public function maxTags(): int
     {
-        return $this->isPremium() ? PHP_INT_MAX : 3;
+        return $this->isPremium() 
+            ? config('limits.premium.tags') 
+            : config('limits.free.tags');
     }
 
     /**
@@ -118,13 +124,30 @@ class User extends Authenticatable
     }
 
     /**
+     * Get remaining videos count
+     */
+    public function remainingVideos(): int
+    {
+        if ($this->isPremium()) return PHP_INT_MAX;
+        return max(0, $this->maxVideos() - $this->videos()->count());
+    }
+
+    /**
      * Check if user can add more notes to a video
      */
     public function canAddNoteToVideo($videoId): bool
     {
         if ($this->isPremium()) return true;
-        
         return $this->notes()->where('video_id', $videoId)->count() < $this->maxNotesPerVideo();
+    }
+
+    /**
+     * Get remaining notes count for a video
+     */
+    public function remainingNotesForVideo($videoId): int
+    {
+        if ($this->isPremium()) return PHP_INT_MAX;
+        return max(0, $this->maxNotesPerVideo() - $this->notes()->where('video_id', $videoId)->count());
     }
 
     /**
@@ -133,5 +156,14 @@ class User extends Authenticatable
     public function canCreateTag(): bool
     {
         return $this->isPremium() || $this->tags()->count() < $this->maxTags();
+    }
+
+    /**
+     * Get remaining tags count
+     */
+    public function remainingTags(): int
+    {
+        if ($this->isPremium()) return PHP_INT_MAX;
+        return max(0, $this->maxTags() - $this->tags()->count());
     }
 }
