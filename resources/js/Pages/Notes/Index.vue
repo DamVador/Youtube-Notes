@@ -83,6 +83,37 @@ const deleteNote = async (note) => {
         console.error('Error deleting note:', error);
     }
 };
+
+const deleteTag = async (tag) => {
+    const noteCount = (tag.notes_count || 0) + (tag.documents_count || 0);
+    const message = noteCount > 0 
+        ? `Delete tag "${tag.name}"? It will be removed from ${noteCount} note(s).`
+        : `Delete tag "${tag.name}"?`;
+    
+    if (!confirm(message)) return;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        await fetch(route('tags.destroy', tag.id), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        });
+
+        // Si le tag supprimé était sélectionné, on le désélectionne
+        if (selectedTag.value === tag.id.toString()) {
+            selectedTag.value = '';
+        }
+
+        router.reload({ only: ['tags', 'notes'] });
+    } catch (error) {
+        console.error('Error deleting tag:', error);
+    }
+};
 </script>
 
 <template>
@@ -146,19 +177,34 @@ const deleteNote = async (note) => {
 
                     <!-- Quick Tag Filters -->
                     <div v-if="tags.length > 0" class="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <button
+                        <div
                             v-for="tag in tags"
                             :key="tag.id"
-                            @click="selectedTag = selectedTag === tag.id.toString() ? '' : tag.id.toString()"
-                            :style="{
-                                backgroundColor: selectedTag === tag.id.toString() ? tag.color : 'transparent',
-                                color: selectedTag === tag.id.toString() ? 'white' : tag.color,
-                                borderColor: tag.color
-                            }"
-                            class="px-3 py-1 text-sm rounded-full border transition-colors"
+                            class="group relative flex items-center"
                         >
-                            {{ tag.name }}
-                        </button>
+                            <button
+                                @click="selectedTag = selectedTag === tag.id.toString() ? '' : tag.id.toString()"
+                                :style="{
+                                    backgroundColor: selectedTag === tag.id.toString() ? tag.color : 'transparent',
+                                    color: selectedTag === tag.id.toString() ? 'white' : tag.color,
+                                    borderColor: tag.color
+                                }"
+                                class="px-3 py-1 text-sm rounded-full border transition-colors pr-7"
+                            >
+                                {{ tag.name }}
+                            </button>
+                            <!-- Delete button -->
+                            <button
+                                @click.stop="deleteTag(tag)"
+                                class="absolute right-1.5 w-4 h-4 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 transition-opacity"
+                                :style="{ color: selectedTag === tag.id.toString() ? 'white' : tag.color }"
+                                title="Delete tag"
+                            >
+                                <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        </div>
                     </div>
                 </div>
 
@@ -214,8 +260,8 @@ const deleteNote = async (note) => {
                                                 Quick Note
                                             </span>
                                             <Link
-                                                v-if="note.type === 'quick_note' && note.timestamp !== null"
-                                                :href="route('videos.show', note.video?.id)"
+                                                v-if="note.type === 'quick_note' && note.timestamp !== null && note.video"
+                                                :href="route('videos.show', note.video.id)"
                                                 class="text-xs font-mono text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300"
                                             >
                                                 {{ formatTimestamp(note.timestamp) }}
@@ -254,7 +300,8 @@ const deleteNote = async (note) => {
                                     <!-- Actions -->
                                     <div class="flex items-center gap-2">
                                         <Link
-                                            :href="route('videos.show', note.video?.id)"
+                                            v-if="note.video"
+                                            :href="route('videos.show', note.video.id)"
                                             class="text-xs text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300"
                                         >
                                             View
