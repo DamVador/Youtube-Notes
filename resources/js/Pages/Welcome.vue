@@ -18,9 +18,7 @@ defineProps({
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                 <div class="flex justify-between h-16 items-center">
                     <div class="flex items-center gap-2">
-                        <!-- <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg flex items-center justify-center"> -->
-                            <Logo size="md" />
-                        <!-- </div> -->
+                        <Logo size="md" />
                     </div>
 
                     <div v-if="canLogin" class="flex items-center gap-3">
@@ -105,42 +103,134 @@ defineProps({
 
         <!-- Features Section -->
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">
+                    Everything you need to learn faster
+                </h2>
+                <p class="text-slate-400 max-w-xl mx-auto">
+                    Stop pausing, rewinding, and losing track. VidNotes keeps everything in one place.
+                </p>
+            </div>
+
             <div class="grid md:grid-cols-3 gap-8">
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+                <!-- Feature 1: Search -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Search YouTube</h3>
-                    <p class="text-slate-400 text-sm">
-                        Find any video directly from the app and start taking notes immediately.
+                    <h3 class="text-lg font-semibold text-white mb-2">Search & Play Instantly</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        No more tab switching. Search YouTube, pick a video, and start learning — all without leaving the app.
                     </p>
                 </div>
 
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+                <!-- Feature 2: Editor -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Rich Text Editor</h3>
-                    <p class="text-slate-400 text-sm">
-                        Format your notes with headings, lists, highlights, and more.
+                    <h3 class="text-lg font-semibold text-white mb-2">Notes That Make Sense</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Structure your thoughts with headings, highlights, lists, and code blocks. Your notes, your way.
                     </p>
                 </div>
 
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+                <!-- Feature 3: Timestamps -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
                     <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Timestamps</h3>
-                    <p class="text-slate-400 text-sm">
-                        Add clickable timestamps to jump to any moment in the video.
+                    <h3 class="text-lg font-semibold text-white mb-2">Jump Back in One Click</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Add timestamps to your notes and click to jump to that exact moment. Never lose that "aha!" moment again.
                     </p>
                 </div>
+            </div>
+
+            <!-- Additional Features Row -->
+            <div class="grid md:grid-cols-2 gap-8 mt-8">
+                <!-- Feature 4: Quick Notes -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
+                    <div class="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Capture Ideas Instantly</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Quick notes let you jot down thoughts in seconds without interrupting the video. Timestamp included automatically.
+                    </p>
+                </div>
+
+                <!-- Feature 5: Tags -->
+                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
+                    <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Organize Your Knowledge</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Tag your notes by topic, project, or course. Find exactly what you need when you need it.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Social Proof / Use Cases Section -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-700/50">
+            <div class="text-center mb-12">
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">
+                    Built for learners like you
+                </h2>
+            </div>
+
+            <div class="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
+                <div class="text-center p-6">
+                    <div class="text-3xl mb-3">🎓</div>
+                    <h4 class="font-semibold text-white mb-1">Students</h4>
+                    <p class="text-slate-400 text-sm">Taking notes on online courses and lectures</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-3xl mb-3">👨‍💻</div>
+                    <h4 class="font-semibold text-white mb-1">Developers</h4>
+                    <p class="text-slate-400 text-sm">Following coding tutorials step by step</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-3xl mb-3">🎨</div>
+                    <h4 class="font-semibold text-white mb-1">Creators</h4>
+                    <p class="text-slate-400 text-sm">Researching and collecting inspiration</p>
+                </div>
+                <div class="text-center p-6">
+                    <div class="text-3xl mb-3">📚</div>
+                    <h4 class="font-semibold text-white mb-1">Lifelong Learners</h4>
+                    <p class="text-slate-400 text-sm">Building a personal knowledge base</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- CTA Section -->
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-2xl p-8 sm:p-12 text-center">
+                <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">
+                    Ready to remember what you watch?
+                </h2>
+                <p class="text-slate-300 mb-8 max-w-xl mx-auto">
+                    Join the community of learners who turned passive watching into active learning.
+                </p>
+                <Link
+                    v-if="canRegister"
+                    :href="route('register')"
+                    class="inline-block px-10 py-4 text-lg font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/30 transform transition hover:-translate-y-1 active:scale-95"
+                >
+                    Start taking better notes — it's free
+                </Link>
             </div>
         </div>
 
