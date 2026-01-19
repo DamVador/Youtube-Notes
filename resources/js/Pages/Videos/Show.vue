@@ -399,6 +399,30 @@ const createTag = async () => {
     }
 };
 
+const deleteTag = async (tag) => {
+    if (!confirm(`Delete tag "${tag.name}"?`)) return;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+
+        await fetch(route('tags.destroy', tag.id), {
+            method: 'DELETE',
+            headers: {
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+        });
+
+        // Retirer le tag de la liste
+        availableTags.value = availableTags.value.filter(t => t.id !== tag.id);
+        // Retirer le tag des tags sélectionnés si présent
+        selectedDocTags.value = selectedDocTags.value.filter(id => id !== tag.id);
+    } catch (error) {
+        console.error('Error deleting tag:', error);
+    }
+};
+
 const sortedNotes = computed(() => {
     return [...notes.value].sort((a, b) => {
         if (a.timestamp === null && b.timestamp === null) return 0;
@@ -752,19 +776,34 @@ const exportToPdf = () => {
                             <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
                                 <div class="flex flex-wrap items-center gap-2">
                                     <span class="text-xs text-gray-500 dark:text-gray-400">Tags:</span>
-                                    <button
+                                    <div
                                         v-for="tag in availableTags"
                                         :key="tag.id"
-                                        @click="toggleDocTag(tag.id)"
-                                        :style="{
-                                            backgroundColor: selectedDocTags.includes(tag.id) ? tag.color : 'transparent',
-                                            color: selectedDocTags.includes(tag.id) ? 'white' : tag.color,
-                                            borderColor: tag.color
-                                        }"
-                                        class="px-2 py-0.5 text-xs rounded-full border transition-colors"
+                                        class="group relative inline-flex items-center"
                                     >
-                                        {{ tag.name }}
-                                    </button>
+                                        <button
+                                            @click="toggleDocTag(tag.id)"
+                                            :style="{
+                                                backgroundColor: selectedDocTags.includes(tag.id) ? tag.color : 'transparent',
+                                                color: selectedDocTags.includes(tag.id) ? 'white' : tag.color,
+                                                borderColor: tag.color
+                                            }"
+                                            class="px-2 py-0.5 text-xs rounded-full border transition-colors pr-5"
+                                        >
+                                            {{ tag.name }}
+                                        </button>
+                                        <!-- Delete button -->
+                                        <button
+                                            @click.stop="deleteTag(tag)"
+                                            class="absolute right-1 w-3 h-3 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-70 hover:!opacity-100 transition-opacity"
+                                            :style="{ color: selectedDocTags.includes(tag.id) ? 'white' : tag.color }"
+                                            title="Delete tag"
+                                        >
+                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
                                     <button
                                         @click="showTagInput = !showTagInput"
                                         class="px-2 py-0.5 text-xs rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
@@ -852,24 +891,61 @@ const exportToPdf = () => {
                         <!-- Tags -->
                         <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
                             <div class="flex flex-wrap items-center gap-2">
-                                <button
+                                <div
                                     v-for="tag in availableTags"
                                     :key="tag.id"
-                                    @click="toggleDocTag(tag.id)"
-                                    :style="{
-                                        backgroundColor: selectedDocTags.includes(tag.id) ? tag.color : 'transparent',
-                                        color: selectedDocTags.includes(tag.id) ? 'white' : tag.color,
-                                        borderColor: tag.color
-                                    }"
-                                    class="px-2 py-0.5 text-xs rounded-full border transition-colors"
+                                    class="group relative inline-flex items-center"
                                 >
-                                    {{ tag.name }}
-                                </button>
+                                    <button
+                                        @click="toggleDocTag(tag.id)"
+                                        :style="{
+                                            backgroundColor: selectedDocTags.includes(tag.id) ? tag.color : 'transparent',
+                                            color: selectedDocTags.includes(tag.id) ? 'white' : tag.color,
+                                            borderColor: tag.color
+                                        }"
+                                        class="px-2 py-0.5 text-xs rounded-full border transition-colors pr-5"
+                                    >
+                                        {{ tag.name }}
+                                    </button>
+                                    <!-- Delete button -->
+                                    <button
+                                        @click.stop="deleteTag(tag)"
+                                        class="absolute right-1 w-3 h-3 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 transition-opacity"
+                                        :style="{ color: selectedDocTags.includes(tag.id) ? 'white' : tag.color }"
+                                        title="Delete tag"
+                                    >
+                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                        </svg>
+                                    </button>
+                                </div>
                                 <button
                                     @click="showTagInput = !showTagInput"
                                     class="px-2 py-0.5 text-xs rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
                                 >
                                     +
+                                </button>
+                            </div>
+                            
+                            <!-- New tag input for mobile -->
+                            <div v-if="showTagInput" class="flex items-center gap-2 mt-2">
+                                <input
+                                    v-model="newTagName"
+                                    type="text"
+                                    placeholder="Tag name"
+                                    class="text-xs rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 w-24"
+                                    @keyup.enter="createTag"
+                                />
+                                <input
+                                    v-model="newTagColor"
+                                    type="color"
+                                    class="w-6 h-6 rounded cursor-pointer border-0"
+                                />
+                                <button
+                                    @click="createTag"
+                                    class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+                                >
+                                    Add
                                 </button>
                             </div>
                         </div>
