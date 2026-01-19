@@ -38,6 +38,7 @@ class HandleInertiaRequests extends Middleware
                     'id' => $user->id,
                     'name' => $user->name,
                     'email' => $user->email,
+                    'is_admin' => $user->is_admin,
                     'isPremium' => $user->isPremium(),
                     'canExportPdf' => $user->canExportPdf(),
                     'limits' => [

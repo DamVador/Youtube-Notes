@@ -62,6 +62,12 @@ const showingNavigationDropdown = ref(false);
                             </template>
 
                             <template #content>
+                                <DropdownLink 
+                                    v-if="$page.props.auth.user.is_admin" 
+                                    :href="route('admin.dashboard')"
+                                >
+                                    🛡️ Admin
+                                </DropdownLink>
                                 <DropdownLink :href="route('profile.edit')">
                                     Profile
                                 </DropdownLink>
@@ -138,6 +144,12 @@ const showingNavigationDropdown = ref(false);
                             {{ $page.props.auth.user.email }}
                         </div>
                     </div>
+                    <ResponsiveNavLink 
+                        v-if="$page.props.auth.user.is_admin" 
+                        :href="route('admin.dashboard')"
+                    >
+                        🛡️ Admin
+                    </ResponsiveNavLink>
                     <ResponsiveNavLink :href="route('profile.edit')">
                         Profile
                     </ResponsiveNavLink>

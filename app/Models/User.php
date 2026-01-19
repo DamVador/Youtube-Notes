@@ -25,6 +25,7 @@ class User extends Authenticatable
         'password',
         'google_id',
         'avatar',
+        'is_admin',
     ];
 
     /**
@@ -35,6 +36,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'is_admin' => 'boolean',
     ];
 
     /**
@@ -74,7 +76,8 @@ class User extends Authenticatable
      */
     public function isPremium(): bool
     {
-        return $this->subscribed('premium');
+        return 
+           $this->subscriptions()->where('stripe_status', 'active')->exists();
     }
 
     /**
