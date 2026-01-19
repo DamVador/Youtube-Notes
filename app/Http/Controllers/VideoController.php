@@ -121,6 +121,10 @@ class VideoController extends Controller
             abort(403);
         }
 
+        $video->notes()->delete();
+        
+        $video->document()->delete();
+        
         $video->delete();
 
         return redirect()->route('videos.index');
