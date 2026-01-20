@@ -33,6 +33,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
     Route::get('/videos/{video}', [VideoController::class, 'show'])->name('videos.show');
     Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');
+    Route::patch('/videos/{video}/position', [VideoController::class, 'updatePosition'])->name('videos.updatePosition');
 
     // Notes
     Route::get('/notes', [NoteController::class, 'index'])->name('notes.index');
