@@ -18,6 +18,7 @@ class Video extends Model
         'title',
         'thumbnail',
         'channel_name',
+        'last_position',
     ];
 
     public function user(): BelongsTo

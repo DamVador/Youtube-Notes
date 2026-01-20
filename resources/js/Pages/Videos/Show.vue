@@ -2,7 +2,7 @@
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import TiptapEditor from '@/Components/TiptapEditor.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import { ref, onMounted, computed, watch } from 'vue';
+import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
 import html2pdf from 'html2pdf.js';
 
 const props = defineProps({
@@ -23,6 +23,8 @@ const collapsedThreshold = 500;
 // Mobile/Collapsed Quick Notes panel
 const showQuickNotesPanel = ref(false);
 
+const lastPositionSave = ref(0);
+
 // Computed: should Quick Notes be collapsed into a button?
 const isQuickNotesCollapsed = computed(() => {
     return videoWidth.value >= collapsedThreshold;
@@ -34,6 +36,12 @@ onMounted(() => {
     if (savedWidth) {
         videoWidth.value = Math.min(Math.max(parseInt(savedWidth), minWidth), maxWidth);
     }
+    window.addEventListener('beforeunload', savePosition);
+});
+
+onBeforeUnmount(() => {
+    savePosition();
+    window.removeEventListener('beforeunload', savePosition);
 });
 
 // Save width to localStorage when changed
@@ -146,13 +154,50 @@ const createPlayer = () => {
             autoplay: 0,
             modestbranding: 1,
             rel: 0,
+            start: props.video.last_position || 0,
         },
         events: {
             onReady: () => {
                 playerReady.value = true;
             },
+            onStateChange: onPlayerStateChange,
         },
     });
+};
+
+const savePosition = async () => {
+    if (!player.value || !playerReady.value) return;
+    
+    const currentTime = Math.floor(player.value.getCurrentTime());
+    
+    // Ne sauvegarde que si la position a changé d'au moins 5 secondes
+    if (Math.abs(currentTime - lastPositionSave.value) < 5) return;
+    
+    lastPositionSave.value = currentTime;
+
+    try {
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        
+        await fetch(route('videos.updatePosition', props.video.id), {
+            method: 'PATCH',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': csrfToken,
+                'X-Requested-With': 'XMLHttpRequest',
+            },
+            credentials: 'same-origin',
+            body: JSON.stringify({ position: currentTime }),
+        });
+    } catch (error) {
+        console.error('Error saving position:', error);
+    }
+};
+
+const onPlayerStateChange = (event) => {
+    // 2 = paused, 0 = ended
+    if (event.data === 2 || event.data === 0) {
+        savePosition();
+    }
 };
 
 const getCurrentTime = () => {

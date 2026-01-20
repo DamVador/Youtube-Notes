@@ -129,4 +129,19 @@ class VideoController extends Controller
 
         return redirect()->route('videos.index');
     }
+
+    public function updatePosition(Request $request, Video $video)
+    {
+        if ($video->user_id !== $request->user()->id) {
+            abort(403);
+        }
+
+        $request->validate([
+            'position' => 'required|integer|min:0',
+        ]);
+
+        $video->update(['last_position' => $request->position]);
+
+        return response()->json(['success' => true]);
+    }
 }
