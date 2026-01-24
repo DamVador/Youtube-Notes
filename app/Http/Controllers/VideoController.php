@@ -105,6 +105,8 @@ class VideoController extends Controller
         if ($video->user_id !== $request->user()->id) {
             abort(403);
         }
+        
+        $video->update(['last_watched_at' => now()]);
 
         $video->load(['notes' => function ($query) {
             $query->with('tags')->orderBy('timestamp');
@@ -140,7 +142,10 @@ class VideoController extends Controller
             'position' => 'required|integer|min:0',
         ]);
 
-        $video->update(['last_position' => $request->position]);
+        $video->update([
+            'last_position' => $request->position,
+            'last_watched_at' => now(),
+        ]);
 
         return response()->json(['success' => true]);
     }

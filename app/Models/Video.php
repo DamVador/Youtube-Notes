@@ -19,6 +19,11 @@ class Video extends Model
         'thumbnail',
         'channel_name',
         'last_position',
+        'last_watched_at',
+    ];
+
+    protected $casts = [
+        'last_watched_at' => 'datetime',
     ];
 
     public function user(): BelongsTo

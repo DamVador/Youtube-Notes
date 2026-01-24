@@ -11,6 +11,18 @@ class DashboardController extends Controller
     {
         $user = $request->user();
 
+        // Continue watching - dernière vidéo avec position > 0
+        $continueWatching = $user->videos()
+            ->whereNotNull('last_watched_at')
+            ->latest('last_watched_at')
+            ->first();
+        
+        $stats = [
+            'videos_count' => $user->videos()->count(),
+            'notes_count' => $user->notes()->count(),
+            'tags_count' => $user->tags()->count(),
+        ];
+
         // Recent videos with note counts (quick notes + documents)
         $recentVideos = $user->videos()
             ->withCount('notes')
@@ -60,6 +72,8 @@ class DashboardController extends Controller
             ->values();
 
         return Inertia::render('Dashboard', [
+            'continueWatching' => $continueWatching,
+            'stats' => $stats,
             'recentVideos' => $recentVideos,
             'recentNotes' => $recentNotes,
         ]);
