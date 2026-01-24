@@ -4,6 +4,7 @@ import TiptapEditor from '@/Components/TiptapEditor.vue';
 import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
 import html2pdf from 'html2pdf.js';
+import PresentationMode from '@/Components/PresentationMode.vue';
 
 const props = defineProps({
     video: Object,
@@ -24,6 +25,8 @@ const collapsedThreshold = 500;
 const showQuickNotesPanel = ref(false);
 
 const lastPositionSave = ref(0);
+
+const showPresentation = ref(false);
 
 // Computed: should Quick Notes be collapsed into a button?
 const isQuickNotesCollapsed = computed(() => {
@@ -808,6 +811,16 @@ const exportToPdf = () => {
                                         </svg>
                                         Export PDF
                                     </button>
+
+                                    <button
+                                        @click="showPresentation = true"
+                                        class="text-xs px-3 py-1.5 rounded bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300 hover:bg-purple-200 dark:hover:bg-purple-800 transition-colors flex items-center gap-1"
+                                    >
+                                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0h3a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h3m0 0V2m0 2h8" />
+                                        </svg>
+                                        Présentation
+                                    </button>
                                     <span v-if="isSavingDocument" class="text-xs text-gray-500 dark:text-gray-400">
                                         Saving...
                                     </span>
@@ -928,6 +941,16 @@ const exportToPdf = () => {
                                     class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300"
                                 >
                                     PDF
+                                </button>
+
+                                <button
+                                    @click="showPresentation = true"
+                                    class="text-xs px-2 py-1 rounded bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
+                                    title="Mode Présentation"
+                                >
+                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0h3a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h3m0 0V2m0 2h8" />
+                                    </svg>
                                 </button>
                                 <span v-if="lastSaved" class="text-xs text-green-600 dark:text-green-400">✓</span>
                             </div>
@@ -1177,6 +1200,13 @@ const exportToPdf = () => {
             </div>
         </div>
     </AuthenticatedLayout>
+
+    <PresentationMode
+        v-if="showPresentation"
+        :content="documentContent"
+        :video-title="video.title"
+        @close="showPresentation = false"
+    />
 </template>
 
 <style scoped>
