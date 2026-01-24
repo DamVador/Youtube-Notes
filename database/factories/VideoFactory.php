@@ -15,6 +15,8 @@ class VideoFactory extends Factory
             'title' => $this->faker->sentence(),
             'thumbnail' => $this->faker->imageUrl(320, 180),
             'channel_name' => $this->faker->company(),
+            'last_position' => 0,
+            'last_watched_at' => null,
         ];
     }
 }
