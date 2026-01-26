@@ -5,6 +5,11 @@ import { Head, Link } from '@inertiajs/vue3';
 import { ref, onMounted, computed, watch, onBeforeUnmount } from 'vue';
 import html2pdf from 'html2pdf.js';
 import PresentationMode from '@/Components/PresentationMode.vue';
+import QuickNotesPanel from '@/Components/Video/QuickNotesPanel.vue';
+import TagSelector from '@/Components/Video/TagSelector.vue';
+import LimitError from '@/Components/Video/LimitError.vue';
+import QuickNotesInline from '@/Components/Video/QuickNotesInline.vue';
+import QuickNotesButton from '@/Components/Video/QuickNotesButton.vue';
 
 const props = defineProps({
     video: Object,
@@ -86,7 +91,6 @@ const notes = ref(props.video.notes || []);
 const newNoteContent = ref('');
 const currentTimestamp = ref(null);
 const isSavingNote = ref(false);
-const showQuickNotes = ref(true);
 
 // Edit Quick Note
 const editingNoteId = ref(null);
@@ -96,9 +100,6 @@ const editingNoteTimestamp = ref(null);
 // Tags
 const availableTags = ref([]);
 const selectedDocTags = ref([]);
-const showTagInput = ref(false);
-const newTagName = ref('');
-const newTagColor = ref('#3B82F6');
 
 // YouTube Player
 const player = ref(null);
@@ -173,7 +174,6 @@ const savePosition = async () => {
     
     const currentTime = Math.floor(player.value.getCurrentTime());
     
-    // Ne sauvegarde que si la position a changé d'au moins 5 secondes
     if (Math.abs(currentTime - lastPositionSave.value) < 5) return;
     
     lastPositionSave.value = currentTime;
@@ -197,7 +197,6 @@ const savePosition = async () => {
 };
 
 const onPlayerStateChange = (event) => {
-    // 2 = paused, 0 = ended
     if (event.data === 2 || event.data === 0) {
         savePosition();
     }
@@ -214,13 +213,6 @@ const seekTo = (seconds) => {
     if (player.value && playerReady.value) {
         player.value.seekTo(seconds, true);
     }
-};
-
-const formatTimestamp = (seconds) => {
-    if (seconds === null || seconds === undefined) return '';
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, '0')}`;
 };
 
 // Document functions
@@ -404,9 +396,7 @@ const toggleDocTag = (tagId) => {
     saveDocument();
 };
 
-const createTag = async () => {
-    if (!newTagName.value.trim()) return;
-
+const createTag = async (tagData) => {
     limitError.value = null;
 
     try {
@@ -421,10 +411,7 @@ const createTag = async () => {
                 'X-Requested-With': 'XMLHttpRequest',
             },
             credentials: 'same-origin',
-            body: JSON.stringify({
-                name: newTagName.value,
-                color: newTagColor.value,
-            }),
+            body: JSON.stringify(tagData),
         });
 
         const data = await response.json();
@@ -439,8 +426,6 @@ const createTag = async () => {
 
         availableTags.value.push(data);
         selectedDocTags.value.push(data.id);
-        newTagName.value = '';
-        showTagInput.value = false;
         saveDocument();
     } catch (error) {
         console.error('Error creating tag:', error);
@@ -462,23 +447,12 @@ const deleteTag = async (tag) => {
             credentials: 'same-origin',
         });
 
-        // Retirer le tag de la liste
         availableTags.value = availableTags.value.filter(t => t.id !== tag.id);
-        // Retirer le tag des tags sélectionnés si présent
         selectedDocTags.value = selectedDocTags.value.filter(id => id !== tag.id);
     } catch (error) {
         console.error('Error deleting tag:', error);
     }
 };
-
-const sortedNotes = computed(() => {
-    return [...notes.value].sort((a, b) => {
-        if (a.timestamp === null && b.timestamp === null) return 0;
-        if (a.timestamp === null) return 1;
-        if (b.timestamp === null) return -1;
-        return a.timestamp - b.timestamp;
-    });
-});
 
 const handleEditorClick = (event) => {
     const target = event.target;
@@ -499,7 +473,6 @@ const exportToPdf = () => {
         return;
     }
 
-    // Create a temporary container with styled content
     const container = document.createElement('div');
     container.innerHTML = `
         <div style="font-family: Arial, sans-serif; padding: 20px;">
@@ -512,7 +485,6 @@ const exportToPdf = () => {
         </div>
     `;
 
-    // Style timestamp links for PDF
     container.querySelectorAll('.timestamp-link').forEach(link => {
         link.style.backgroundColor = '#dbeafe';
         link.style.color = '#1d4ed8';
@@ -582,28 +554,11 @@ const exportToPdf = () => {
                         </div>
 
                         <!-- Limit Error -->
-                        <div 
-                            v-if="limitError" 
-                            class="mt-3 p-3 bg-red-100 dark:bg-red-900/30 border border-red-300 dark:border-red-800 rounded-lg"
-                        >
-                            <div class="flex items-start gap-2">
-                                <span class="text-red-500 flex-shrink-0">⚠️</span>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm text-red-700 dark:text-red-300">{{ limitError }}</p>
-                                    <Link 
-                                        :href="route('subscription.pricing')" 
-                                        class="inline-block mt-2 px-3 py-1 bg-blue-600 text-white text-xs font-medium rounded hover:bg-blue-700"
-                                    >
-                                        Upgrade to Premium
-                                    </Link>
-                                </div>
-                                <button @click="limitError = null" class="text-red-400 hover:text-red-600">
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
+                        <LimitError
+                            v-if="limitError"
+                            :message="limitError"
+                            @dismiss="limitError = null"
+                        />
 
                         <!-- Width Slider -->
                         <div class="mt-3 px-1 flex-shrink-0">
@@ -623,155 +578,34 @@ const exportToPdf = () => {
                         </div>
 
                         <!-- Quick Notes: Inline (when not collapsed) -->
-                        <div 
+                        <QuickNotesInline
                             v-if="!isQuickNotesCollapsed"
-                            class="mt-4 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex-1 flex flex-col min-h-0 overflow-hidden"
-                        >
-                            <div class="px-4 py-3 flex-shrink-0 border-b border-gray-200 dark:border-gray-700">
-                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                    Quick Notes
-                                    <span class="text-xs font-normal text-gray-500 dark:text-gray-400 ml-1">
-                                        ({{ notes.length }})
-                                    </span>
-                                </span>
-                            </div>
-
-                            <!-- Add Quick Note -->
-                            <div class="p-3 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-                                <textarea
-                                    v-model="newNoteContent"
-                                    placeholder="Add a quick note..."
-                                    rows="2"
-                                    class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                                ></textarea>
-                                <div class="flex items-center justify-between mt-2">
-                                    <div class="flex items-center gap-2">
-                                        <button
-                                            @click="addTimestamp"
-                                            class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
-                                        >
-                                            + Timestamp
-                                        </button>
-                                        <span
-                                            v-if="currentTimestamp !== null"
-                                            class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                                        >
-                                            {{ formatTimestamp(currentTimestamp) }}
-                                            <button @click="clearTimestamp" class="hover:text-blue-900 dark:hover:text-blue-100">×</button>
-                                        </span>
-                                    </div>
-                                    <button
-                                        @click="saveQuickNote"
-                                        :disabled="isSavingNote || !newNoteContent.trim()"
-                                        class="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 transition-colors"
-                                    >
-                                        {{ isSavingNote ? '...' : 'Add' }}
-                                    </button>
-                                </div>
-                            </div>
-
-                            <!-- Quick Notes List (scrollable) -->
-                            <div class="flex-1 overflow-y-auto">
-                                <div v-if="sortedNotes.length === 0" class="p-4 text-sm text-gray-500 dark:text-gray-400 text-center">
-                                    No quick notes yet
-                                </div>
-                                <div
-                                    v-for="note in sortedNotes"
-                                    :key="note.id"
-                                    class="px-3 py-2 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                                >
-                                    <!-- Edit Mode -->
-                                    <div v-if="editingNoteId === note.id" class="space-y-2">
-                                        <textarea
-                                            v-model="editingNoteContent"
-                                            rows="2"
-                                            class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                                        ></textarea>
-                                        <div class="flex items-center justify-between">
-                                            <div class="flex items-center gap-2">
-                                                <button
-                                                    @click="updateEditTimestamp"
-                                                    class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
-                                                >
-                                                    Update time
-                                                </button>
-                                                <span
-                                                    v-if="editingNoteTimestamp !== null"
-                                                    class="text-xs font-mono text-blue-600 dark:text-blue-400"
-                                                >
-                                                    {{ formatTimestamp(editingNoteTimestamp) }}
-                                                </span>
-                                            </div>
-                                            <div class="flex items-center gap-2">
-                                                <button
-                                                    @click="cancelEditNote"
-                                                    class="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                                >
-                                                    Cancel
-                                                </button>
-                                                <button
-                                                    @click="saveEditNote"
-                                                    class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                                                >
-                                                    Save
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <!-- View Mode -->
-                                    <div v-else>
-                                        <button
-                                            v-if="note.timestamp !== null"
-                                            @click="seekTo(note.timestamp)"
-                                            class="text-xs font-mono text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                                        >
-                                            {{ formatTimestamp(note.timestamp) }}
-                                        </button>
-                                        <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
-                                            {{ note.content }}
-                                        </p>
-                                        <div class="flex items-center gap-3 mt-1">
-                                            <button
-                                                @click="startEditNote(note)"
-                                                class="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                                            >
-                                                Edit
-                                            </button>
-                                            <button
-                                                @click="deleteNote(note.id)"
-                                                class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                            :notes="notes"
+                            :new-note-content="newNoteContent"
+                            :current-timestamp="currentTimestamp"
+                            :is-saving-note="isSavingNote"
+                            :editing-note-id="editingNoteId"
+                            :editing-note-content="editingNoteContent"
+                            :editing-note-timestamp="editingNoteTimestamp"
+                            @update:new-note-content="newNoteContent = $event"
+                            @update:editing-note-content="editingNoteContent = $event"
+                            @add-timestamp="addTimestamp"
+                            @clear-timestamp="clearTimestamp"
+                            @save-note="saveQuickNote"
+                            @seek-to="seekTo"
+                            @start-edit="startEditNote"
+                            @cancel-edit="cancelEditNote"
+                            @update-edit-timestamp="updateEditTimestamp"
+                            @save-edit="saveEditNote"
+                            @delete-note="deleteNote"
+                        />
 
                         <!-- Quick Notes: Collapsed Button (when video is wide) -->
-                        <button
+                        <QuickNotesButton
                             v-if="isQuickNotesCollapsed"
+                            :notes-count="notes.length"
                             @click="showQuickNotesPanel = true"
-                            class="mt-4 w-full px-4 py-3 bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 flex items-center justify-between hover:border-blue-300 dark:hover:border-blue-600 transition-colors"
-                        >
-                            <span class="flex items-center gap-2">
-                                <svg class="w-5 h-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" />
-                                </svg>
-                                <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                    Quick Notes
-                                </span>
-                            </span>
-                            <span class="flex items-center gap-2">
-                                <span class="text-xs px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300">
-                                    {{ notes.length }}
-                                </span>
-                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                </svg>
-                            </span>
-                        </button>
+                        />
 
                         <!-- Resize Handle -->
                         <div
@@ -819,7 +653,7 @@ const exportToPdf = () => {
                                         <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0h3a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h3m0 0V2m0 2h8" />
                                         </svg>
-                                        Présentation
+                                        Presentation
                                     </button>
                                     <span v-if="isSavingDocument" class="text-xs text-gray-500 dark:text-gray-400">
                                         Saving...
@@ -831,66 +665,13 @@ const exportToPdf = () => {
                             </div>
 
                             <!-- Tags -->
-                            <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50 flex-shrink-0">
-                                <div class="flex flex-wrap items-center gap-2">
-                                    <span class="text-xs text-gray-500 dark:text-gray-400">Tags:</span>
-                                    <div
-                                        v-for="tag in availableTags"
-                                        :key="tag.id"
-                                        class="group relative inline-flex items-center"
-                                    >
-                                        <button
-                                            @click="toggleDocTag(tag.id)"
-                                            :style="{
-                                                backgroundColor: selectedDocTags.includes(tag.id) ? tag.color : 'transparent',
-                                                color: selectedDocTags.includes(tag.id) ? 'white' : tag.color,
-                                                borderColor: tag.color
-                                            }"
-                                            class="px-2 py-0.5 text-xs rounded-full border transition-colors pr-5"
-                                        >
-                                            {{ tag.name }}
-                                        </button>
-                                        <!-- Delete button -->
-                                        <button
-                                            @click.stop="deleteTag(tag)"
-                                            class="absolute right-1 w-3 h-3 flex items-center justify-center rounded-full opacity-0 group-hover:opacity-70 hover:!opacity-100 transition-opacity"
-                                            :style="{ color: selectedDocTags.includes(tag.id) ? 'white' : tag.color }"
-                                            title="Delete tag"
-                                        >
-                                            <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                            </svg>
-                                        </button>
-                                    </div>
-                                    <button
-                                        @click="showTagInput = !showTagInput"
-                                        class="px-2 py-0.5 text-xs rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400 hover:border-gray-400 dark:hover:border-gray-500 transition-colors"
-                                    >
-                                        + New
-                                    </button>
-
-                                    <div v-if="showTagInput" class="flex items-center gap-2 ml-2">
-                                        <input
-                                            v-model="newTagName"
-                                            type="text"
-                                            placeholder="Tag name"
-                                            class="text-xs rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 w-24"
-                                            @keyup.enter="createTag"
-                                        />
-                                        <input
-                                            v-model="newTagColor"
-                                            type="color"
-                                            class="w-6 h-6 rounded cursor-pointer border-0"
-                                        />
-                                        <button
-                                            @click="createTag"
-                                            class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                        >
-                                            Add
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
+                            <TagSelector
+                                :available-tags="availableTags"
+                                :selected-tags="selectedDocTags"
+                                @toggle="toggleDocTag"
+                                @create="createTag"
+                                @delete="deleteTag"
+                            />
 
                             <!-- Editor (scrollable) -->
                             <div @click="handleEditorClick" class="flex-1 overflow-y-auto">
@@ -946,7 +727,7 @@ const exportToPdf = () => {
                                 <button
                                     @click="showPresentation = true"
                                     class="text-xs px-2 py-1 rounded bg-purple-100 dark:bg-purple-900 text-purple-700 dark:text-purple-300"
-                                    title="Mode Présentation"
+                                    title="Presentation Mode"
                                 >
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4V2a1 1 0 011-1h8a1 1 0 011 1v2m0 0h3a2 2 0 012 2v12a2 2 0 01-2 2H4a2 2 0 01-2-2V6a2 2 0 012-2h3m0 0V2m0 2h8" />
@@ -957,66 +738,14 @@ const exportToPdf = () => {
                         </div>
 
                         <!-- Tags -->
-                        <div class="px-4 py-2 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800/50">
-                            <div class="flex flex-wrap items-center gap-2">
-                                <div
-                                    v-for="tag in availableTags"
-                                    :key="tag.id"
-                                    class="group relative inline-flex items-center"
-                                >
-                                    <button
-                                        @click="toggleDocTag(tag.id)"
-                                        :style="{
-                                            backgroundColor: selectedDocTags.includes(tag.id) ? tag.color : 'transparent',
-                                            color: selectedDocTags.includes(tag.id) ? 'white' : tag.color,
-                                            borderColor: tag.color
-                                        }"
-                                        class="px-2 py-0.5 text-xs rounded-full border transition-colors pr-5"
-                                    >
-                                        {{ tag.name }}
-                                    </button>
-                                    <!-- Delete button -->
-                                    <button
-                                        @click.stop="deleteTag(tag)"
-                                        class="absolute right-1 w-3 h-3 flex items-center justify-center rounded-full opacity-50 hover:opacity-100 transition-opacity"
-                                        :style="{ color: selectedDocTags.includes(tag.id) ? 'white' : tag.color }"
-                                        title="Delete tag"
-                                    >
-                                        <svg class="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-                                <button
-                                    @click="showTagInput = !showTagInput"
-                                    class="px-2 py-0.5 text-xs rounded-full border border-dashed border-gray-300 dark:border-gray-600 text-gray-500 dark:text-gray-400"
-                                >
-                                    +
-                                </button>
-                            </div>
-                            
-                            <!-- New tag input for mobile -->
-                            <div v-if="showTagInput" class="flex items-center gap-2 mt-2">
-                                <input
-                                    v-model="newTagName"
-                                    type="text"
-                                    placeholder="Tag name"
-                                    class="text-xs rounded border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 px-2 py-1 w-24"
-                                    @keyup.enter="createTag"
-                                />
-                                <input
-                                    v-model="newTagColor"
-                                    type="color"
-                                    class="w-6 h-6 rounded cursor-pointer border-0"
-                                />
-                                <button
-                                    @click="createTag"
-                                    class="px-2 py-1 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-                                >
-                                    Add
-                                </button>
-                            </div>
-                        </div>
+                        <TagSelector
+                            :available-tags="availableTags"
+                            :selected-tags="selectedDocTags"
+                            :show-label="false"
+                            @toggle="toggleDocTag"
+                            @create="createTag"
+                            @delete="deleteTag"
+                        />
 
                         <!-- Editor -->
                         <div @click="handleEditorClick" class="min-h-[400px]">
@@ -1043,160 +772,29 @@ const exportToPdf = () => {
                     </button>
                 </div>
 
-                <!-- QUICK NOTES PANEL (shared between collapsed desktop and mobile) -->
-                <Teleport to="body">
-                    <Transition name="sheet">
-                        <div
-                            v-if="showQuickNotesPanel"
-                            class="fixed inset-0 z-50"
-                        >
-                            <!-- Backdrop -->
-                            <div
-                                @click="showQuickNotesPanel = false"
-                                class="absolute inset-0 bg-black/50"
-                            ></div>
-
-                            <!-- Sheet - Right panel on desktop, bottom sheet on mobile -->
-                            <div 
-                                class="absolute bg-white dark:bg-gray-800 flex flex-col
-                                    lg:right-0 lg:top-0 lg:bottom-0 lg:w-[400px] lg:rounded-l-2xl
-                                    max-lg:bottom-0 max-lg:left-0 max-lg:right-0 max-lg:max-h-[70vh] max-lg:rounded-t-2xl"
-                            >
-                                <!-- Handle (mobile only) -->
-                                <div class="lg:hidden flex justify-center py-3 flex-shrink-0">
-                                    <div class="w-10 h-1 bg-gray-300 dark:bg-gray-600 rounded-full"></div>
-                                </div>
-
-                                <!-- Header -->
-                                <div class="px-4 py-3 lg:py-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
-                                    <h3 class="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                                        Quick Notes ({{ notes.length }})
-                                    </h3>
-                                    <button
-                                        @click="showQuickNotesPanel = false"
-                                        class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                    >
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
-                                </div>
-
-                                <!-- Add Quick Note -->
-                                <div class="p-4 border-b border-gray-100 dark:border-gray-700 flex-shrink-0">
-                                    <textarea
-                                        v-model="newNoteContent"
-                                        placeholder="Add a quick note..."
-                                        rows="2"
-                                        class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                                    ></textarea>
-                                    <div class="flex items-center justify-between mt-2">
-                                        <div class="flex items-center gap-2">
-                                            <button
-                                                @click="addTimestamp"
-                                                class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-500 transition-colors"
-                                            >
-                                                + Timestamp
-                                            </button>
-                                            <span
-                                                v-if="currentTimestamp !== null"
-                                                class="inline-flex items-center gap-1 text-xs px-2 py-1 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300"
-                                            >
-                                                {{ formatTimestamp(currentTimestamp) }}
-                                                <button @click="clearTimestamp" class="hover:text-blue-900 dark:hover:text-blue-100">×</button>
-                                            </span>
-                                        </div>
-                                        <button
-                                            @click="saveQuickNote"
-                                            :disabled="isSavingNote || !newNoteContent.trim()"
-                                            class="text-xs px-3 py-1.5 rounded bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:text-gray-500 dark:disabled:bg-gray-600 dark:disabled:text-gray-400 transition-colors"
-                                        >
-                                            {{ isSavingNote ? '...' : 'Add' }}
-                                        </button>
-                                    </div>
-                                </div>
-
-                                <!-- Notes List -->
-                                <div class="flex-1 overflow-y-auto">
-                                    <div v-if="sortedNotes.length === 0" class="p-8 text-center text-gray-500 dark:text-gray-400">
-                                        No quick notes yet
-                                    </div>
-                                    <div
-                                        v-for="note in sortedNotes"
-                                        :key="note.id"
-                                        class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
-                                    >
-                                        <!-- Edit Mode -->
-                                        <div v-if="editingNoteId === note.id" class="space-y-2">
-                                            <textarea
-                                                v-model="editingNoteContent"
-                                                rows="2"
-                                                class="w-full text-sm rounded-md border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 focus:border-blue-500 focus:ring-blue-500 resize-none"
-                                            ></textarea>
-                                            <div class="flex items-center justify-between">
-                                                <div class="flex items-center gap-2">
-                                                    <button
-                                                        @click="updateEditTimestamp"
-                                                        class="text-xs px-2 py-1 rounded bg-gray-100 dark:bg-gray-600 text-gray-600 dark:text-gray-300"
-                                                    >
-                                                        Update time
-                                                    </button>
-                                                    <span
-                                                        v-if="editingNoteTimestamp !== null"
-                                                        class="text-xs font-mono text-blue-600 dark:text-blue-400"
-                                                    >
-                                                        {{ formatTimestamp(editingNoteTimestamp) }}
-                                                    </span>
-                                                </div>
-                                                <div class="flex items-center gap-2">
-                                                    <button
-                                                        @click="cancelEditNote"
-                                                        class="text-xs px-2 py-1 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-                                                    >
-                                                        Cancel
-                                                    </button>
-                                                    <button
-                                                        @click="saveEditNote"
-                                                        class="text-xs px-2 py-1 rounded bg-blue-600 text-white hover:bg-blue-700"
-                                                    >
-                                                        Save
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                        <!-- View Mode -->
-                                        <div v-else>
-                                            <button
-                                                v-if="note.timestamp !== null"
-                                                @click="seekTo(note.timestamp)"
-                                                class="text-xs font-mono text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 transition-colors"
-                                            >
-                                                {{ formatTimestamp(note.timestamp) }}
-                                            </button>
-                                            <p class="text-sm text-gray-700 dark:text-gray-300 mt-0.5">
-                                                {{ note.content }}
-                                            </p>
-                                            <div class="flex items-center gap-3 mt-1">
-                                                <button
-                                                    @click="startEditNote(note)"
-                                                    class="text-xs text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition-colors"
-                                                >
-                                                    Edit
-                                                </button>
-                                                <button
-                                                    @click="deleteNote(note.id)"
-                                                    class="text-xs text-gray-400 hover:text-red-500 dark:hover:text-red-400 transition-colors"
-                                                >
-                                                    Delete
-                                                </button>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </Transition>
-                </Teleport>
+                <!-- QUICK NOTES PANEL (extracted component) -->
+                <QuickNotesPanel
+                    :show="showQuickNotesPanel"
+                    :notes="notes"
+                    :new-note-content="newNoteContent"
+                    :current-timestamp="currentTimestamp"
+                    :is-saving-note="isSavingNote"
+                    :editing-note-id="editingNoteId"
+                    :editing-note-content="editingNoteContent"
+                    :editing-note-timestamp="editingNoteTimestamp"
+                    @close="showQuickNotesPanel = false"
+                    @update:new-note-content="newNoteContent = $event"
+                    @update:editing-note-content="editingNoteContent = $event"
+                    @add-timestamp="addTimestamp"
+                    @clear-timestamp="clearTimestamp"
+                    @save-note="saveQuickNote"
+                    @seek-to="seekTo"
+                    @start-edit="startEditNote"
+                    @cancel-edit="cancelEditNote"
+                    @update-edit-timestamp="updateEditTimestamp"
+                    @save-edit="saveEditNote"
+                    @delete-note="deleteNote"
+                />
             </div>
         </div>
     </AuthenticatedLayout>
@@ -1226,37 +824,5 @@ const exportToPdf = () => {
     background: #3b82f6;
     cursor: pointer;
     border: none;
-}
-
-/* Panel Transitions */
-.sheet-enter-active,
-.sheet-leave-active {
-    transition: all 0.3s ease;
-}
-
-.sheet-enter-active > div:last-child,
-.sheet-leave-active > div:last-child {
-    transition: transform 0.3s ease;
-}
-
-.sheet-enter-from,
-.sheet-leave-to {
-    opacity: 0;
-}
-
-/* Mobile: slide from bottom */
-@media (max-width: 1023px) {
-    .sheet-enter-from > div:last-child,
-    .sheet-leave-to > div:last-child {
-        transform: translateY(100%);
-    }
-}
-
-/* Desktop: slide from right */
-@media (min-width: 1024px) {
-    .sheet-enter-from > div:last-child,
-    .sheet-leave-to > div:last-child {
-        transform: translateX(100%);
-    }
 }
 </style>
