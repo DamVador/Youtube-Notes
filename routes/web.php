@@ -69,6 +69,13 @@ Route::get('/pricing', [SubscriptionController::class, 'pricing'])->name('subscr
 
 Route::post('/stripe/webhook', [WebhookController::class, 'handleWebhook'])->name('cashier.webhook');
 
+Route::get('/features', function () {
+    return Inertia::render('Features', [
+        'canLogin' => Route::has('login'),
+        'canRegister' => Route::has('register'),
+    ]);
+})->name('features');
+
 // Routes profil (Breeze)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
