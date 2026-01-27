@@ -15,7 +15,7 @@ class PreprodProtection
     public function handle(Request $request, Closure $next): Response
     {
         // Ne pas activer en production
-        if (app()->environment('production')) {
+        if (app()->environment('production', 'local')) {
             return $next($request);
         }
 
