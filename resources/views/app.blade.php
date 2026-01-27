@@ -13,25 +13,34 @@
 
         <!-- SEO Meta Tags -->
         <meta name="description" content="VidNotes - Take notes while watching YouTube videos. Timestamp your notes, organize with tags, and export to PDF.">
-        <meta name="keywords" content="youtube notes, video notes, timestamp notes, study tool">
+        <meta name="keywords" content="youtube notes, video notes, timestamp notes, study tool, youtube study, video learning">
         <meta name="author" content="VidNotes">
+        
+        <!-- Canonical URL -->
+        <link rel="canonical" href="{{ url()->current() }}">
+
+        <!-- Robots (noindex pour preprod) -->
+        @if(app()->environment('preprod', 'local', 'staging'))
+        <meta name="robots" content="noindex, nofollow">
+        @endif
 
         <!-- Open Graph / Facebook -->
         <meta property="og:type" content="website">
-        <meta property="og:url" content="https://vid-notes.com/">
+        <meta property="og:url" content="{{ url()->current() }}">
         <meta property="og:title" content="VidNotes - Smart Video Note-Taking">
         <meta property="og:description" content="Take notes while watching YouTube videos. Timestamp your notes, organize with tags, and export to PDF.">
         <meta property="og:image" content="https://vid-notes.com/og-image.png">
+        <meta property="og:site_name" content="VidNotes">
 
         <!-- Twitter -->
-        <meta property="twitter:card" content="summary_large_image">
-        <meta property="twitter:url" content="https://vid-notes.com/">
-        <meta property="twitter:title" content="VidNotes - Smart Video Note-Taking">
-        <meta property="twitter:description" content="Take notes while watching YouTube videos. Timestamp your notes, organize with tags, and export to PDF.">
-        <meta property="twitter:image" content="https://vid-notes.com/og-image.png">
+        <meta name="twitter:card" content="summary_large_image">
+        <meta name="twitter:url" content="{{ url()->current() }}">
+        <meta name="twitter:title" content="VidNotes - Smart Video Note-Taking">
+        <meta name="twitter:description" content="Take notes while watching YouTube videos. Timestamp your notes, organize with tags, and export to PDF.">
+        <meta name="twitter:image" content="https://vid-notes.com/og-image.png">
 
         <meta name="csrf-token" content="{{ csrf_token() }}">
-        <title inertia>{{ config('app.name', 'Laravel') }}</title>
+        <title inertia>{{ config('app.name', 'VidNotes') }}</title>
 
         <!-- Fonts -->
         <link rel="preconnect" href="https://fonts.bunny.net">
@@ -42,9 +51,15 @@
         @vite(['resources/js/app.js', "resources/js/Pages/{$page['component']}.vue"])
         @inertiaHead
 
-        <!-- Google Analytics -->
-        @if(config('services.google.analytics_id'))
-        <meta name="analytics-id" content="{{ config('services.google.analytics_id') }}">
+        <!-- Google Analytics (production only) -->
+        @if(app()->environment('production') && config('services.google.analytics_id'))
+        <script async src="https://www.googletagmanager.com/gtag/js?id={{ config('services.google.analytics_id') }}"></script>
+        <script>
+            window.dataLayer = window.dataLayer || [];
+            function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', '{{ config('services.google.analytics_id') }}');
+        </script>
         @endif
     </head>
     <body class="font-sans antialiased">

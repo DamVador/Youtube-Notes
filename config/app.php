@@ -123,4 +123,5 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    'preprod_password' => env('PREPROD_PASSWORD', 'changeme'),
 ];
