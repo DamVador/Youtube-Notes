@@ -10,6 +10,7 @@ import TagSelector from '@/Components/Video/TagSelector.vue';
 import LimitError from '@/Components/Video/LimitError.vue';
 import QuickNotesInline from '@/Components/Video/QuickNotesInline.vue';
 import QuickNotesButton from '@/Components/Video/QuickNotesButton.vue';
+import KeyboardShortcutsHelp from '@/Components/Video/KeyboardShortcutsHelp.vue';
 
 const props = defineProps({
     video: Object,
@@ -36,20 +37,6 @@ const showPresentation = ref(false);
 // Computed: should Quick Notes be collapsed into a button?
 const isQuickNotesCollapsed = computed(() => {
     return videoWidth.value >= collapsedThreshold;
-});
-
-// Load saved width from localStorage
-onMounted(() => {
-    const savedWidth = localStorage.getItem('videoWidth');
-    if (savedWidth) {
-        videoWidth.value = Math.min(Math.max(parseInt(savedWidth), minWidth), maxWidth);
-    }
-    window.addEventListener('beforeunload', savePosition);
-});
-
-onBeforeUnmount(() => {
-    savePosition();
-    window.removeEventListener('beforeunload', savePosition);
 });
 
 // Save width to localStorage when changed
@@ -104,12 +91,6 @@ const selectedDocTags = ref([]);
 // YouTube Player
 const player = ref(null);
 const playerReady = ref(false);
-
-onMounted(async () => {
-    await loadTags();
-    await loadDocument();
-    initYouTubePlayer();
-});
 
 const loadTags = async () => {
     try {
@@ -505,6 +486,83 @@ const exportToPdf = () => {
 
     html2pdf().set(opt).from(container).save();
 };
+
+// Keyboard shortcuts
+const handleKeyboardShortcuts = (e) => {
+    // Escape : Fermer les panels/modals
+    if (e.key === 'Escape') {
+        if (showPresentation.value) {
+            showPresentation.value = false;
+            return;
+        }
+        if (showQuickNotesPanel.value) {
+            showQuickNotesPanel.value = false;
+            return;
+        }
+        return;
+    }
+    
+    // Les raccourcis Ctrl suivants ne doivent pas interférer avec la saisie
+    if (!e.ctrlKey || e.metaKey || e.shiftKey) return;
+    
+    // Ctrl + T : Insérer timestamp dans l'éditeur
+    if (e.key === 't') {
+        e.preventDefault();
+        insertTimestampInEditor();
+        return;
+    }
+    
+    // Ctrl + N : Focus sur Quick Note + timestamp
+    if (e.key === 'n') {
+        e.preventDefault();
+        addTimestamp();
+        if (isQuickNotesCollapsed.value) {
+            showQuickNotesPanel.value = true;
+        }
+        setTimeout(() => {
+            const textarea = document.querySelector('textarea[placeholder="Add a quick note..."]');
+            textarea?.focus();
+        }, 100);
+        return;
+    }
+    
+    // Ctrl + P : Mode Présentation
+    if (e.key === 'p') {
+        e.preventDefault();
+        showPresentation.value = true;
+        return;
+    }
+    
+    // Ctrl + E : Export PDF
+    if (e.key === 'e') {
+        e.preventDefault();
+        exportToPdf();
+        return;
+    }
+};
+
+onMounted(async () => {
+    // Charger les données
+    await loadTags();
+    await loadDocument();
+    initYouTubePlayer();
+    
+    // Charger la largeur vidéo depuis localStorage
+    const savedWidth = localStorage.getItem('videoWidth');
+    if (savedWidth) {
+        videoWidth.value = Math.min(Math.max(parseInt(savedWidth), minWidth), maxWidth);
+    }
+    
+    // Event listeners
+    window.addEventListener('beforeunload', savePosition);
+    window.addEventListener('keydown', handleKeyboardShortcuts);
+});
+
+onBeforeUnmount(() => {
+    savePosition();
+    window.removeEventListener('beforeunload', savePosition);
+    window.removeEventListener('keydown', handleKeyboardShortcuts);
+});
 </script>
 
 <template>
@@ -630,6 +688,7 @@ const exportToPdf = () => {
                                     Notes
                                 </h3>
                                 <div class="flex items-center gap-3">
+                                    <KeyboardShortcutsHelp />
                                     <button
                                         @click="insertTimestampInEditor"
                                         class="text-xs px-3 py-1.5 rounded bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition-colors"
