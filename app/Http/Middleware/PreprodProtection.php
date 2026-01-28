@@ -51,7 +51,7 @@ class PreprodProtection
         // Vérifier le mot de passe soumis
         if ($request->isMethod('post') && $request->input('preprod_password') === config('app.preprod_password')) {
             $request->session()->put('preprod_authenticated', true);
-            return redirect()->intended('/');
+            return redirect($request->url());
         }
 
         // Afficher le formulaire de mot de passe
