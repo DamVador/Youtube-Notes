@@ -76,6 +76,14 @@ Route::get('/features', function () {
     ]);
 })->name('features');
 
+Route::post('/preprod-auth', function (\Illuminate\Http\Request $request) {
+    if ($request->input('preprod_password') === config('app.preprod_password')) {
+        $request->session()->put('preprod_authenticated', true);
+        return redirect($request->input('redirect_to', '/'));
+    }
+    return back();
+})->name('preprod.auth')->withoutMiddleware([\App\Http\Middleware\PreprodProtection::class]);
+
 // Routes profil (Breeze)
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

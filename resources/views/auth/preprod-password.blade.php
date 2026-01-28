@@ -12,8 +12,9 @@
         <h1 class="text-xl font-semibold text-gray-800 mb-2">Preprod Environment</h1>
         <p class="text-sm text-gray-500 mb-6">Enter password to access</p>
         
-        <form method="POST">
+        <form method="POST" action="/preprod-auth">
             @csrf
+            <input type="hidden" name="redirect_to" value="{{ request()->url() }}">
             <input 
                 type="password" 
                 name="preprod_password" 

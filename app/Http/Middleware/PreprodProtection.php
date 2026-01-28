@@ -13,48 +13,28 @@ class PreprodProtection
      * sans bloquer les requêtes API externes (YouTube, Stripe webhooks, etc.)
      */
     public function handle(Request $request, Closure $next): Response
-    {
-        // Ne pas activer en production
-        if (app()->environment('production', 'local')) {
-            return $next($request);
-        }
-
-        // Laisser passer les webhooks Stripe
-        if ($request->is('stripe/*') || $request->is('webhook/*')) {
-            return $next($request);
-        }
-
-        // Laisser passer les requêtes API (pour YouTube iframe, etc.)
-        if ($request->expectsJson() || $request->is('api/*')) {
-            return $next($request);
-        }
-
-        // Laisser passer les assets
-        if ($request->is('build/*') || $request->is('storage/*') || $request->is('favicon.ico')) {
-            return $next($request);
-        }
-
-        // Laisser passer certains User-Agents (bots légitimes pour les tests)
-        $userAgent = $request->userAgent() ?? '';
-        $allowedBots = ['GoogleBot', 'YouTube', 'Stripe'];
-        foreach ($allowedBots as $bot) {
-            if (stripos($userAgent, $bot) !== false) {
-                return $next($request);
-            }
-        }
-
-        // Vérifier si déjà authentifié via session
-        if ($request->session()->get('preprod_authenticated')) {
-            return $next($request);
-        }
-
-        // Vérifier le mot de passe soumis
-        if ($request->isMethod('post') && $request->input('preprod_password') === config('app.preprod_password')) {
-            $request->session()->put('preprod_authenticated', true);
-            return redirect($request->url());
-        }
-
-        // Afficher le formulaire de mot de passe
-        return response(view('auth.preprod-password'), 401);
+{
+    // Ne pas activer en production et local
+    if (app()->environment('production', 'local')) {
+        return $next($request);
     }
+
+    // Laisser passer les webhooks et API
+    if ($request->is('stripe/*') || $request->is('webhook/*') || $request->is('api/*') || $request->is('preprod-auth')) {
+        return $next($request);
+    }
+
+    // Laisser passer les assets
+    if ($request->is('build/*') || $request->is('storage/*') || $request->is('favicon.ico')) {
+        return $next($request);
+    }
+
+    // Vérifier si déjà authentifié via session
+    if ($request->session()->get('preprod_authenticated')) {
+        return $next($request);
+    }
+
+    // Afficher le formulaire de mot de passe
+    return response(view('auth.preprod-password'), 401);
+}
 }
