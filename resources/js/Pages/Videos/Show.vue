@@ -11,6 +11,7 @@ import LimitError from '@/Components/Video/LimitError.vue';
 import QuickNotesInline from '@/Components/Video/QuickNotesInline.vue';
 import QuickNotesButton from '@/Components/Video/QuickNotesButton.vue';
 import KeyboardShortcutsHelp from '@/Components/Video/KeyboardShortcutsHelp.vue';
+import NotesTimeline from '@/Components/Video/NotesTimeline.vue';
 
 const props = defineProps({
     video: Object,
@@ -38,6 +39,9 @@ const showPresentation = ref(false);
 const isQuickNotesCollapsed = computed(() => {
     return videoWidth.value >= collapsedThreshold;
 });
+
+const videoDuration = ref(0);
+const documentJson = ref(null);
 
 // Save width to localStorage when changed
 watch(videoWidth, (newWidth) => {
@@ -71,7 +75,12 @@ const stopResize = () => {
 const documentContent = ref('');
 const isSavingDocument = ref(false);
 const lastSaved = ref(null);
-const editorRef = ref(null);
+const editorDesktopRef = ref(null);
+const editorMobileRef = ref(null);
+
+const editorRef = computed(() => {
+    return window.innerWidth >= 1024 ? editorDesktopRef.value : editorMobileRef.value;
+});
 
 // Quick Notes
 const notes = ref(props.video.notes || []);
@@ -108,6 +117,7 @@ const loadDocument = async () => {
             const doc = await response.json();
             if (doc) {
                 documentContent.value = doc.content || '';
+                documentJson.value = doc.content_json || null;
                 selectedDocTags.value = doc.tags?.map(t => t.id) || [];
             }
         }
@@ -144,6 +154,7 @@ const createPlayer = () => {
         events: {
             onReady: () => {
                 playerReady.value = true;
+                videoDuration.value = player.value.getDuration();
             },
             onStateChange: onPlayerStateChange,
         },
@@ -228,6 +239,7 @@ const saveDocument = async () => {
         });
 
         if (response.ok) {
+            documentJson.value = editorRef.value?.getJSON();
             lastSaved.value = new Date();
         }
     } catch (error) {
@@ -563,6 +575,44 @@ onBeforeUnmount(() => {
     window.removeEventListener('beforeunload', savePosition);
     window.removeEventListener('keydown', handleKeyboardShortcuts);
 });
+
+// Highlight
+const highlightedNoteId = ref(null);
+
+const highlightNote = (noteId) => {
+    highlightedNoteId.value = noteId;
+    
+    if (isQuickNotesCollapsed.value) {
+        showQuickNotesPanel.value = true;
+    }
+
+    // Scroll vers la note
+    setTimeout(() => {
+        const noteElement = document.querySelector(`[data-note-id="${noteId}"]`);
+        if (noteElement) {
+            noteElement.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+    }, 300);
+    
+    // Retirer le highlight après 3s
+    setTimeout(() => {
+        highlightedNoteId.value = null;
+    }, 3000);
+};
+
+// Highlight a timestamp in editor
+const highlightTimestamp = (seconds) => {
+    const timestampLink = document.querySelector(`.timestamp-link[data-timestamp="${seconds}"], a[href="#timestamp-${seconds}"]`);
+
+    if (timestampLink) {
+        timestampLink.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        timestampLink.classList.add('highlighted-timestamp');
+        
+        setTimeout(() => {
+            timestampLink.classList.remove('highlighted-timestamp');
+        }, 3000);
+    }
+};
 </script>
 
 <template>
@@ -600,6 +650,14 @@ onBeforeUnmount(() => {
                         <div class="bg-black rounded-lg overflow-hidden aspect-video shadow-lg flex-shrink-0">
                             <div id="youtube-player-desktop" class="w-full h-full"></div>
                         </div>
+                        <NotesTimeline
+                            :notes="notes"
+                            :document-json="documentJson"
+                            :video-duration="videoDuration"
+                            @seek="seekTo"
+                            @highlight-note="highlightNote"
+                            @highlight-timestamp="highlightTimestamp"
+                        />
 
                         <!-- Video Info -->
                         <div class="mt-3 px-1 flex-shrink-0">
@@ -735,9 +793,10 @@ onBeforeUnmount(() => {
                             <!-- Editor (scrollable) -->
                             <div @click="handleEditorClick" class="flex-1 overflow-y-auto">
                                 <TiptapEditor
-                                    ref="editorRef"
+                                    ref="editorDesktopRef"
                                     v-model="documentContent"
                                     @update:modelValue="autoSaveDocument"
+                                    @timestamp-click="seekTo"
                                     placeholder="Start writing your notes..."
                                 />
                             </div>
@@ -751,6 +810,14 @@ onBeforeUnmount(() => {
                     <div class="bg-black rounded-lg overflow-hidden aspect-video shadow-lg">
                         <div id="youtube-player" class="w-full h-full"></div>
                     </div>
+                    <NotesTimeline
+                        :notes="notes"
+                        :document-json="documentJson"
+                        :video-duration="videoDuration"
+                        @seek="seekTo"
+                        @highlight-note="highlightNote"
+                        @highlight-timestamp="highlightTimestamp"
+                    />
 
                     <!-- Video Info -->
                     <div class="mt-3 px-1">
@@ -809,9 +876,10 @@ onBeforeUnmount(() => {
                         <!-- Editor -->
                         <div @click="handleEditorClick" class="min-h-[400px]">
                             <TiptapEditor
-                                ref="editorRef"
+                                ref="editorMobileRef"
                                 v-model="documentContent"
                                 @update:modelValue="autoSaveDocument"
+                                @timestamp-click="seekTo"
                                 placeholder="Start writing your notes..."
                             />
                         </div>
@@ -835,6 +903,7 @@ onBeforeUnmount(() => {
                 <QuickNotesPanel
                     :show="showQuickNotesPanel"
                     :notes="notes"
+                    :highlighted-note-id="highlightedNoteId"
                     :new-note-content="newNoteContent"
                     :current-timestamp="currentTimestamp"
                     :is-saving-note="isSavingNote"
@@ -883,5 +952,16 @@ onBeforeUnmount(() => {
     background: #3b82f6;
     cursor: pointer;
     border: none;
+}
+:deep(.highlighted-timestamp) {
+    background-color: rgb(254 249 195) !important;
+    padding: 2px 4px !important;
+    border-radius: 4px !important;
+    transition: background-color 0.3s ease;
+}
+
+:deep(.dark .highlighted-timestamp),
+.dark :deep(.highlighted-timestamp) {
+    background-color: rgba(234, 179, 8, 0.3) !important;
 }
 </style>

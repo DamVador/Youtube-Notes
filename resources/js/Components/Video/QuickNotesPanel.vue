@@ -34,6 +34,10 @@ const props = defineProps({
         type: Number,
         default: null,
     },
+    highlightedNoteId: {
+        type: [Number, String],
+        default: null,
+    },
 });
 
 const emit = defineEmits([
@@ -150,7 +154,9 @@ const formatTimestamp = (seconds) => {
                         <div
                             v-for="note in sortedNotes"
                             :key="note.id"
-                            class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0"
+                            :data-note-id="note.id"
+                            class="px-4 py-3 border-b border-gray-100 dark:border-gray-700 last:border-0 transition-colors duration-300"
+                            :class="{ 'bg-yellow-100 dark:bg-yellow-900/30': highlightedNoteId == note.id }"
                         >
                             <!-- Edit Mode -->
                             <div v-if="editingNoteId === note.id" class="space-y-2">

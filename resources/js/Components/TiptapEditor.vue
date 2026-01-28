@@ -20,8 +20,9 @@ const props = defineProps({
         default: 'Start writing your notes...',
     },
 });
-
-const emit = defineEmits(['update:modelValue', 'save']);
+const lastCursorPosition = ref(1);
+// const emit = defineEmits(['update:modelValue', 'save']);
+const emit = defineEmits(['update:modelValue', 'timestamp-click']);
 
 const showAdvancedMenu = ref(false);
 const showHighlightColors = ref(false);
@@ -70,6 +71,7 @@ const editor = useEditor({
             openOnClick: false,
             HTMLAttributes: {
                 class: 'text-blue-600 underline cursor-pointer',
+                target: null,
             },
         }),
         Underline,
@@ -89,9 +91,27 @@ const editor = useEditor({
         attributes: {
             class: 'focus:outline-none min-h-[400px] lg:min-h-[500px] px-4 py-4 text-gray-900 dark:text-gray-100',
         },
+        handleClick: (view, pos, event) => {
+            const target = event.target;
+            if (target.classList.contains('timestamp-link') || target.closest('.timestamp-link')) {
+                event.preventDefault();
+                event.stopPropagation();
+                const link = target.classList.contains('timestamp-link') ? target : target.closest('.timestamp-link');
+                const href = link.getAttribute('href');
+                if (href?.startsWith('#timestamp-')) {
+                    const seconds = parseInt(href.replace('#timestamp-', ''));
+                    emit('timestamp-click', seconds);
+                }
+                return true;
+            }
+            return false;
+        },
     },
     onUpdate: ({ editor }) => {
         emit('update:modelValue', editor.getHTML());
+    },
+    onSelectionUpdate: ({ editor }) => {
+        lastCursorPosition.value = editor.state.selection.from;
     },
 });
 
@@ -141,12 +161,34 @@ const setHighlight = (color) => {
 const insertTimestamp = (seconds) => {
     const mins = Math.floor(seconds / 60);
     const secs = seconds % 60;
-    const formatted = `${mins}:${secs.toString().padStart(2, '0')}`;
+    const formatted = `[${mins}:${secs.toString().padStart(2, '0')}]`;
+    
+    const position = lastCursorPosition.value || editor.value.state.selection.from || editor.value.state.doc.content.size;
     
     editor.value
         .chain()
         .focus()
-        .insertContent(`<a href="#timestamp-${seconds}" class="timestamp-link" data-timestamp="${seconds}">[${formatted}]</a> `)
+        .insertContentAt(position, [
+            {
+                type: 'text',
+                marks: [
+                    {
+                        type: 'link',
+                        attrs: {
+                            href: `#timestamp-${seconds}`,
+                            class: 'timestamp-link',
+                            'data-timestamp': seconds,
+                            target: null,
+                        },
+                    },
+                ],
+                text: formatted,
+            },
+            {
+                type: 'text',
+                text: '\u00A0',
+            },
+        ])
         .run();
 };
 
