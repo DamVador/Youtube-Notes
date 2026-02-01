@@ -54,6 +54,12 @@ defineProps({
                     >
                         Gérer les utilisateurs
                     </Link>
+                    <Link
+                        :href="route('admin.posts.index')"
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors"
+                    >
+                        Blog Posts
+                    </Link>
                 </div>
 
                 <!-- Recent Users -->

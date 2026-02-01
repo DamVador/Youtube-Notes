@@ -11,6 +11,9 @@ use App\Http\Controllers\LegalController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\WebhookController;
 use App\Http\Controllers\AdminController;
+use App\Http\Controllers\BlogController;
+use App\Http\Controllers\AdminPostController;
+use App\Http\Controllers\SitemapController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -76,6 +79,11 @@ Route::get('/features', function () {
     ]);
 })->name('features');
 
+Route::get('/blog', [BlogController::class, 'index'])->name('blog.index');
+Route::get('/blog/{slug}', [BlogController::class, 'show'])->name('blog.show');
+
+Route::get('/sitemap.xml', [SitemapController::class, 'index']);
+
 Route::post('/preprod-auth', function (\Illuminate\Http\Request $request) {
     if ($request->input('preprod_password') === config('app.preprod_password')) {
         $request->session()->put('preprod_authenticated', true);
@@ -99,6 +107,7 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::post('/users/{user}/toggle-premium', [AdminController::class, 'togglePremium'])->name('users.toggle-premium');
     Route::post('/users/{user}/toggle-admin', [AdminController::class, 'toggleAdmin'])->name('users.toggle-admin');
     Route::delete('/users/{user}', [AdminController::class, 'deleteUser'])->name('users.delete');
+    Route::resource('posts', AdminPostController::class);
 });
 
 require __DIR__.'/auth.php';
