@@ -1,6 +1,7 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
+import DiscoverSection from '@/Components/DiscoverSection.vue';
 
 defineProps({
     continueWatching: Object,
@@ -125,6 +126,9 @@ const formatTime = (seconds) => {
                         </div>
                     </div>
                 </div>
+
+                <!-- Discover Section -->
+                <DiscoverSection />
 
                 <!-- Quick Actions -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">

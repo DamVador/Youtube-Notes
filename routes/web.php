@@ -14,6 +14,7 @@ use App\Http\Controllers\AdminController;
 use App\Http\Controllers\BlogController;
 use App\Http\Controllers\AdminPostController;
 use App\Http\Controllers\SitemapController;
+use App\Http\Controllers\DiscoverController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -97,6 +98,15 @@ Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
+
+// Discover routes (authenticated)
+Route::middleware(['auth', 'verified'])->prefix('discover')->name('discover.')->group(function () {
+    Route::get('/suggestions', [DiscoverController::class, 'suggestions'])->name('suggestions');
+    Route::get('/categories', [DiscoverController::class, 'categories'])->name('categories');
+    Route::get('/interests', [DiscoverController::class, 'userInterests'])->name('interests');
+    Route::post('/interests', [DiscoverController::class, 'updateInterests'])->name('interests.update');
+    Route::post('/refresh', [DiscoverController::class, 'refresh'])->name('refresh');
 });
 
 // Admin routes
