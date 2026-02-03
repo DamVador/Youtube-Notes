@@ -37,7 +37,9 @@ class DiscoverController extends Controller
             $searchTerm = $interest->search_term . ' tutorial';
             
             // Cache key unique per interest
-            $cacheKey = "discover:{$interest->id}:" . now()->format('Y-m-d-H');
+            // $cacheKey = "discover:{$interest->id}:" . now()->format('Y-m-d-H');
+            // TOUPDATE - Remove when unlimited call to YTB API unlocked
+            $cacheKey = "youtube:search:" . md5($searchTerm) . ":" . now()->format('Y-m-d');
             
             $videos = Cache::remember($cacheKey, 3600, function () use ($searchTerm, $videosPerInterest) {
                 return $this->searchYouTube($searchTerm, $videosPerInterest);
