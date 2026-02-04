@@ -3,7 +3,7 @@ import { ref, onMounted } from 'vue';
 import { Link } from '@inertiajs/vue3';
 
 const videos = ref([]);
-const currentInterest = ref([]);
+const interests = ref([]);
 const loading = ref(true);
 const showSettings = ref(false);
 const categories = ref([]);
@@ -12,10 +12,13 @@ const customKeywords = ref([]);
 const newKeyword = ref('');
 const hasInterests = ref(true);
 const savingInterests = ref(false);
-const interests = ref([]);
+const remainingRefreshes = ref(null);
+const isPremium = ref(false);
+const limitReached = ref(false);
 
 const loadSuggestions = async () => {
     loading.value = true;
+    limitReached.value = false;
     try {
         const response = await fetch(route('discover.suggestions'));
         const data = await response.json();
@@ -28,6 +31,9 @@ const loadSuggestions = async () => {
             videos.value = data.videos || [];
             interests.value = data.interests || [];
         }
+        
+        remainingRefreshes.value = data.remaining_refreshes;
+        isPremium.value = data.is_premium || false;
     } catch (error) {
         console.error('Error loading suggestions:', error);
     } finally {
@@ -47,13 +53,13 @@ const loadCategories = async () => {
 const loadUserInterests = async () => {
     try {
         const response = await fetch(route('discover.interests'));
-        const interests = await response.json();
+        const data = await response.json();
         
-        selectedCategories.value = interests
+        selectedCategories.value = data
             .filter(i => i.interest_category_id)
             .map(i => i.interest_category_id);
         
-        customKeywords.value = interests
+        customKeywords.value = data
             .filter(i => i.custom_keyword)
             .map(i => i.custom_keyword);
     } catch (error) {
@@ -118,7 +124,14 @@ const saveInterests = async () => {
 };
 
 const refresh = async () => {
+    // Check if limit reached (for free users)
+    if (!isPremium.value && remainingRefreshes.value !== null && remainingRefreshes.value <= 0) {
+        limitReached.value = true;
+        return;
+    }
+
     loading.value = true;
+    limitReached.value = false;
     try {
         const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
         const response = await fetch(route('discover.refresh'), {
@@ -127,9 +140,19 @@ const refresh = async () => {
                 'X-CSRF-TOKEN': csrfToken,
             },
         });
+        
+        if (response.status === 429) {
+            const data = await response.json();
+            limitReached.value = true;
+            remainingRefreshes.value = 0;
+            return;
+        }
+        
         const data = await response.json();
         videos.value = data.videos || [];
-        currentInterest.value = data.interest || '';
+        interests.value = data.interests || [];
+        remainingRefreshes.value = data.remaining_refreshes;
+        isPremium.value = data.is_premium || false;
     } catch (error) {
         console.error('Error refreshing:', error);
     } finally {
@@ -159,12 +182,20 @@ onMounted(() => {
                 </span>
             </div>
             <div class="flex items-center gap-2">
+                <!-- Refresh counter (free users only) -->
+                <span 
+                    v-if="hasInterests && !isPremium && remainingRefreshes !== null" 
+                    class="text-xs text-gray-400 dark:text-gray-500"
+                >
+                    {{ remainingRefreshes }} refresh{{ remainingRefreshes !== 1 ? 'es' : '' }} left today
+                </span>
+                
                 <button
                     v-if="hasInterests"
                     @click="refresh"
-                    :disabled="loading"
-                    class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50"
-                    title="Refresh suggestions"
+                    :disabled="loading || (!isPremium && remainingRefreshes === 0)"
+                    class="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    :title="!isPremium && remainingRefreshes === 0 ? 'Daily limit reached' : 'Refresh suggestions'"
                 >
                     <svg class="w-5 h-5" :class="{ 'animate-spin': loading }" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -180,6 +211,29 @@ onMounted(() => {
                     </svg>
                     Edit interests
                 </button>
+            </div>
+        </div>
+
+        <!-- Limit reached banner -->
+        <div v-if="limitReached" class="mb-4 p-4 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+            <div class="flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <span class="text-amber-500">⚡</span>
+                    <div>
+                        <p class="text-sm font-medium text-amber-800 dark:text-amber-200">
+                            Daily refresh limit reached
+                        </p>
+                        <p class="text-xs text-amber-600 dark:text-amber-400">
+                            Upgrade to Premium for unlimited refreshes
+                        </p>
+                    </div>
+                </div>
+                <Link
+                    :href="route('subscription.pricing')"
+                    class="px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-sm font-medium rounded-lg transition-colors"
+                >
+                    Upgrade
+                </Link>
             </div>
         </div>
 
@@ -230,6 +284,12 @@ onMounted(() => {
                             </svg>
                         </div>
                     </div>
+                    <!-- Interest badge -->
+                    <div v-if="video.interest" class="absolute bottom-2 left-2">
+                        <span class="px-2 py-0.5 bg-black/60 text-white text-xs rounded-full">
+                            {{ video.interest }}
+                        </span>
+                    </div>
                 </div>
                 <h4 class="text-sm font-medium text-gray-900 dark:text-white line-clamp-2 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                     {{ video.title }}
@@ -265,7 +325,7 @@ onMounted(() => {
                             <h4 class="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                                 Select categories
                             </h4>
-                            <div class="flex flex-wrap gap-2 text-white">
+                            <div class="flex flex-wrap gap-2">
                                 <button
                                     v-for="category in categories"
                                     :key="category.id"
@@ -274,7 +334,7 @@ onMounted(() => {
                                         'px-3 py-2 rounded-lg text-sm font-medium transition-all',
                                         selectedCategories.includes(category.id)
                                             ? 'ring-2 ring-offset-2 ring-blue-500 dark:ring-offset-gray-800'
-                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                                            : 'hover:bg-gray-100 dark:hover:bg-gray-700 text-gray-600 dark:text-gray-400'
                                     ]"
                                     :style="{
                                         backgroundColor: selectedCategories.includes(category.id) ? category.color + '20' : '',

@@ -10,14 +10,60 @@ use Illuminate\Support\Facades\Cache;
 
 class DiscoverController extends Controller
 {
+    // Limites par type d'utilisateur
+    const FREE_DAILY_LIMIT = 5;
+    const PREMIUM_DAILY_LIMIT = null;
+
     /**
-     * Get suggested videos based on user interests
+     * Get remaining refresh count for user
+     */
+    private function getRemainingRefreshes($user): ?int
+    {
+        // Premium = illimité
+        if ($user->is_premium) {
+            return null;
+        }
+
+        $cacheKey = "discover_refresh:{$user->id}:" . now()->format('Y-m-d');
+        $used = Cache::get($cacheKey, 0);
+        
+        return max(0, self::FREE_DAILY_LIMIT - $used);
+    }
+
+    /**
+     * Increment refresh count
+     */
+    private function incrementRefreshCount($user): void
+    {
+        if ($user->is_premium) {
+            return;
+        }
+
+        $cacheKey = "discover_refresh:{$user->id}:" . now()->format('Y-m-d');
+        $used = Cache::get($cacheKey, 0);
+        Cache::put($cacheKey, $used + 1, now()->endOfDay());
+    }
+
+    /**
+     * Check if user can refresh
+     */
+    private function canRefresh($user): bool
+    {
+        if ($user->is_premium) {
+            return true;
+        }
+
+        $remaining = $this->getRemainingRefreshes($user);
+        return $remaining > 0;
+    }
+
+    /**
+     * Get suggested videos (uses cache, doesn't count as refresh)
      */
     public function suggestions(Request $request)
     {
         $user = $request->user();
         
-        // Get user's interests
         $interests = UserInterest::where('user_id', $user->id)
             ->with('category')
             ->get();
@@ -26,40 +72,35 @@ class DiscoverController extends Controller
             return response()->json([
                 'videos' => [],
                 'message' => 'no_interests',
+                'remaining_refreshes' => $this->getRemainingRefreshes($user),
+                'is_premium' => $user->is_premium,
             ]);
         }
 
-        // Get videos from multiple interests (mix)
-        $allVideos = [];
-        $videosPerInterest = max(2, ceil(8 / $interests->count())); // Distribute 8 videos across interests
+        // Cache des résultats par utilisateur (valide 1h)
+        $cacheKey = "discover:user:{$user->id}:" . now()->format('Y-m-d-H');
         
-        foreach ($interests->shuffle()->take(4) as $interest) { // Max 4 interests to avoid too many API calls
-            $searchTerm = $interest->search_term . ' tutorial';
-            
-            // Cache key unique per interest
-            // $cacheKey = "discover:{$interest->id}:" . now()->format('Y-m-d-H');
-            // TOUPDATE - Remove when unlimited call to YTB API unlocked
-            $cacheKey = "youtube:search:" . md5($searchTerm) . ":" . now()->format('Y-m-d');
-            
-            $videos = Cache::remember($cacheKey, 3600, function () use ($searchTerm, $videosPerInterest) {
-                return $this->searchYouTube($searchTerm, $videosPerInterest);
-            });
-            
-            // Tag videos with their interest
-            foreach ($videos as &$video) {
-                $video['interest'] = $interest->search_term;
-            }
-            
-            $allVideos = array_merge($allVideos, $videos);
+        $cached = Cache::get($cacheKey);
+        
+        if ($cached) {
+            return response()->json([
+                'videos' => $cached['videos'],
+                'interests' => $cached['interests'],
+                'remaining_refreshes' => $this->getRemainingRefreshes($user),
+                'is_premium' => $user->is_premium,
+            ]);
         }
+
+        // Pas de cache, on génère (première visite de l'heure)
+        $result = $this->generateSuggestions($user, $interests);
         
-        // Shuffle and limit to 8
-        shuffle($allVideos);
-        $allVideos = array_slice($allVideos, 0, 8);
+        Cache::put($cacheKey, $result, 3600);
 
         return response()->json([
-            'videos' => $allVideos,
-            'interests' => $interests->pluck('search_term')->unique()->values(),
+            'videos' => $result['videos'],
+            'interests' => $result['interests'],
+            'remaining_refreshes' => $this->getRemainingRefreshes($user),
+            'is_premium' => $user->is_premium,
         ]);
     }
 
@@ -80,7 +121,7 @@ class DiscoverController extends Controller
                 'q' => $query,
                 'type' => 'video',
                 'maxResults' => $maxResults,
-                'videoDuration' => 'medium', // 4-20 minutes (educational sweet spot)
+                'videoDuration' => 'medium',
                 'relevanceLanguage' => 'en',
                 'safeSearch' => 'strict',
                 'key' => $apiKey,
@@ -92,7 +133,7 @@ class DiscoverController extends Controller
                 return array_map(function ($item) {
                     return [
                         'youtube_id' => $item['id']['videoId'],
-                        'title' => $item['snippet']['title'],
+                        'title' => html_entity_decode($item['snippet']['title']),
                         'channel_name' => $item['snippet']['channelTitle'],
                         'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] ?? $item['snippet']['thumbnails']['default']['url'],
                         'published_at' => $item['snippet']['publishedAt'],
@@ -142,10 +183,8 @@ class DiscoverController extends Controller
 
         $user = $request->user();
 
-        // Remove old interests
         UserInterest::where('user_id', $user->id)->delete();
 
-        // Add selected categories
         foreach ($validated['category_ids'] ?? [] as $categoryId) {
             UserInterest::create([
                 'user_id' => $user->id,
@@ -153,7 +192,6 @@ class DiscoverController extends Controller
             ]);
         }
 
-        // Add custom keywords
         foreach ($validated['custom_keywords'] ?? [] as $keyword) {
             if (trim($keyword)) {
                 UserInterest::create([
@@ -167,20 +205,75 @@ class DiscoverController extends Controller
     }
 
     /**
-     * Refresh suggestions (clear cache and get new ones)
+     * Refresh suggestions (clears cache, counts as refresh)
      */
     public function refresh(Request $request)
     {
         $user = $request->user();
         
-        // Clear user's discover cache
-        $interests = UserInterest::where('user_id', $user->id)->get();
-        foreach ($interests as $interest) {
-            $pattern = "discover:{$user->id}:{$interest->id}:*";
-            // Simple cache forget for current hour
-            Cache::forget("discover:{$user->id}:{$interest->id}:" . now()->format('Y-m-d-H'));
+        if (!$this->canRefresh($user)) {
+            return response()->json([
+                'error' => 'limit_reached',
+                'message' => 'Daily refresh limit reached.',
+                'remaining_refreshes' => 0,
+                'is_premium' => false,
+            ], 429);
         }
 
-        return $this->suggestions($request);
+        // Increment counter
+        $this->incrementRefreshCount($user);
+        
+        // Clear user cache
+        $cacheKey = "discover:user:{$user->id}:" . now()->format('Y-m-d-H');
+        Cache::forget($cacheKey);
+
+        // Generate new suggestions
+        $interests = UserInterest::where('user_id', $user->id)
+            ->with('category')
+            ->get();
+        
+        $result = $this->generateSuggestions($user, $interests);
+        
+        Cache::put($cacheKey, $result, 3600);
+
+        return response()->json([
+            'videos' => $result['videos'],
+            'interests' => $result['interests'],
+            'remaining_refreshes' => $this->getRemainingRefreshes($user),
+            'is_premium' => $user->is_premium,
+        ]);
+    }
+
+    /**
+     * Generate suggestions (internal)
+     */
+    private function generateSuggestions($user, $interests): array
+    {
+        $allVideos = [];
+        $videosPerInterest = max(2, ceil(8 / $interests->count()));
+        
+        foreach ($interests->shuffle()->take(4) as $interest) {
+            $searchTerm = $interest->search_term . ' tutorial';
+            
+            $cacheKey = "discover:{$interest->id}:" . now()->format('Y-m-d-H');
+            
+            $videos = Cache::remember($cacheKey, 3600, function () use ($searchTerm, $videosPerInterest) {
+                return $this->searchYouTube($searchTerm, $videosPerInterest);
+            });
+            
+            foreach ($videos as &$video) {
+                $video['interest'] = $interest->search_term;
+            }
+            
+            $allVideos = array_merge($allVideos, $videos);
+        }
+        
+        shuffle($allVideos);
+        $allVideos = array_slice($allVideos, 0, 8);
+
+        return [
+            'videos' => $allVideos,
+            'interests' => $interests->pluck('search_term')->unique()->values(),
+        ];
     }
 }
