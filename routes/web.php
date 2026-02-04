@@ -120,4 +120,6 @@ Route::middleware(['auth', 'verified', 'admin'])->prefix('admin')->name('admin.'
     Route::resource('posts', AdminPostController::class);
 });
 
+Route::get('/ping', fn() => response()->json(['ok' => true]))->name('ping')->middleware('web');
+
 require __DIR__.'/auth.php';

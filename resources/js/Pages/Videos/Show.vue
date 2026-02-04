@@ -568,6 +568,8 @@ onMounted(async () => {
     // Event listeners
     window.addEventListener('beforeunload', savePosition);
     window.addEventListener('keydown', handleKeyboardShortcuts);
+    keepSessionAlive();
+    autoSavePosition();
 });
 
 onBeforeUnmount(() => {
@@ -612,6 +614,29 @@ const highlightTimestamp = (seconds) => {
             timestampLink.classList.remove('highlighted-timestamp');
         }, 3000);
     }
+};
+
+// Garder la session active pendant le visionnage
+const keepSessionAlive = () => {
+    setInterval(async () => {
+        try {
+            await fetch(route('ping'), { credentials: 'same-origin' });
+        } catch (e) {
+            // Silently fail
+        }
+    }, 15 * 60 * 1000); // Toutes les 15 minutes
+};
+
+// Sauvegarder la position régulièrement
+const autoSavePosition = () => {
+    setInterval(() => {
+        if (player.value && playerReady.value) {
+            const currentTime = Math.floor(player.value.getCurrentTime());
+            if (currentTime > 0) {
+                savePosition(currentTime);
+            }
+        }
+    }, 30 * 1000); // Toutes les 30 secondes
 };
 </script>
 
