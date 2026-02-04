@@ -39,7 +39,7 @@ class AdminPostController extends Controller
             'is_published' => 'boolean',
         ]);
 
-        $validated['slug'] = $validated['slug'] ?: Str::slug($validated['title']);
+        $validated['slug'] = !empty($validated['slug']) ? $validated['slug'] : Str::slug($validated['title']);
         $validated['user_id'] = auth()->id();
         
         if ($validated['is_published'] ?? false) {

@@ -20,7 +20,7 @@ class DiscoverController extends Controller
     private function getRemainingRefreshes($user): ?int
     {
         // Premium = illimité
-        if ($user->is_premium) {
+        if ($user->isPremium()) {
             return null;
         }
 
@@ -35,7 +35,7 @@ class DiscoverController extends Controller
      */
     private function incrementRefreshCount($user): void
     {
-        if ($user->is_premium) {
+        if ($user->isPremium()) {
             return;
         }
 
@@ -49,7 +49,7 @@ class DiscoverController extends Controller
      */
     private function canRefresh($user): bool
     {
-        if ($user->is_premium) {
+        if ($user->isPremium()) {
             return true;
         }
 
@@ -73,7 +73,7 @@ class DiscoverController extends Controller
                 'videos' => [],
                 'message' => 'no_interests',
                 'remaining_refreshes' => $this->getRemainingRefreshes($user),
-                'is_premium' => $user->is_premium,
+                'is_premium' => $user->isPremium(),
             ]);
         }
 
@@ -87,7 +87,7 @@ class DiscoverController extends Controller
                 'videos' => $cached['videos'],
                 'interests' => $cached['interests'],
                 'remaining_refreshes' => $this->getRemainingRefreshes($user),
-                'is_premium' => $user->is_premium,
+                'is_premium' => $user->isPremium(),
             ]);
         }
 
@@ -100,7 +100,7 @@ class DiscoverController extends Controller
             'videos' => $result['videos'],
             'interests' => $result['interests'],
             'remaining_refreshes' => $this->getRemainingRefreshes($user),
-            'is_premium' => $user->is_premium,
+            'is_premium' => $user->isPremium(),
         ]);
     }
 
@@ -240,7 +240,7 @@ class DiscoverController extends Controller
             'videos' => $result['videos'],
             'interests' => $result['interests'],
             'remaining_refreshes' => $this->getRemainingRefreshes($user),
-            'is_premium' => $user->is_premium,
+            'is_premium' => $user->isPremium(),
         ]);
     }
 
