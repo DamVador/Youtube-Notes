@@ -124,4 +124,7 @@ return [
     ],
 
     'preprod_password' => env('PREPROD_PASSWORD', 'changeme'),
+
+    // Allow or prevent new users inscription
+    'registration_enabled' => env('REGISTRATION_ENABLED', true),
 ];
