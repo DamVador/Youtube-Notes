@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\InterestCategory;
 use App\Models\UserInterest;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Cache;
 
 class DiscoverController extends Controller
@@ -102,49 +101,6 @@ class DiscoverController extends Controller
             'remaining_refreshes' => $this->getRemainingRefreshes($user),
             'is_premium' => $user->isPremium(),
         ]);
-    }
-
-    /**
-     * Search YouTube API
-     */
-    private function searchYouTube(string $query, int $maxResults = 8): array
-    {
-        $apiKey = config('services.youtube.api_key');
-        
-        if (!$apiKey) {
-            return [];
-        }
-
-        try {
-            $response = Http::get('https://www.googleapis.com/youtube/v3/search', [
-                'part' => 'snippet',
-                'q' => $query,
-                'type' => 'video',
-                'maxResults' => $maxResults,
-                'videoDuration' => 'medium',
-                'relevanceLanguage' => 'en',
-                'safeSearch' => 'strict',
-                'key' => $apiKey,
-            ]);
-
-            if ($response->successful()) {
-                $items = $response->json('items', []);
-                
-                return array_map(function ($item) {
-                    return [
-                        'youtube_id' => $item['id']['videoId'],
-                        'title' => html_entity_decode($item['snippet']['title']),
-                        'channel_name' => $item['snippet']['channelTitle'],
-                        'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] ?? $item['snippet']['thumbnails']['default']['url'],
-                        'published_at' => $item['snippet']['publishedAt'],
-                    ];
-                }, $items);
-            }
-        } catch (\Exception $e) {
-            \Log::error('YouTube API error: ' . $e->getMessage());
-        }
-
-        return [];
     }
 
     /**
@@ -246,33 +202,15 @@ class DiscoverController extends Controller
 
     /**
      * Generate suggestions (internal)
+     *
+     * Suggestions previously came from the YouTube Data API, which has been
+     * removed. They stay empty until a non-API source (e.g. channel RSS feeds)
+     * is wired up; user interests are preserved so that work can build on them.
      */
     private function generateSuggestions($user, $interests): array
     {
-        $allVideos = [];
-        $videosPerInterest = max(2, ceil(8 / $interests->count()));
-        
-        foreach ($interests->shuffle()->take(4) as $interest) {
-            $searchTerm = $interest->search_term . ' tutorial';
-            
-            $cacheKey = "discover:{$interest->id}:" . now()->format('Y-m-d-H');
-            
-            $videos = Cache::remember($cacheKey, 3600, function () use ($searchTerm, $videosPerInterest) {
-                return $this->searchYouTube($searchTerm, $videosPerInterest);
-            });
-            
-            foreach ($videos as &$video) {
-                $video['interest'] = $interest->search_term;
-            }
-            
-            $allVideos = array_merge($allVideos, $videos);
-        }
-        
-        shuffle($allVideos);
-        $allVideos = array_slice($allVideos, 0, 8);
-
         return [
-            'videos' => $allVideos,
+            'videos' => [],
             'interests' => $interests->pluck('search_term')->unique()->values(),
         ];
     }

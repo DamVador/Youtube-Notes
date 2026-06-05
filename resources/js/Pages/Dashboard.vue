@@ -1,7 +1,6 @@
 <script setup>
 import AuthenticatedLayout from '@/Layouts/AuthenticatedLayout.vue';
 import { Head, Link } from '@inertiajs/vue3';
-import DiscoverSection from '@/Components/DiscoverSection.vue';
 
 defineProps({
     continueWatching: Object,
@@ -127,9 +126,6 @@ const formatTime = (seconds) => {
                     </div>
                 </div>
 
-                <!-- Discover Section -->
-                <DiscoverSection />
-
                 <!-- Quick Actions -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <Link
@@ -144,9 +140,9 @@ const formatTime = (seconds) => {
                             </div>
                             <div>
                                 <h4 class="font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
-                                    Find a video
+                                    Add a video
                                 </h4>
-                                <p class="text-sm text-gray-500 dark:text-gray-400">Search YouTube or paste a URL</p>
+                                <p class="text-sm text-gray-500 dark:text-gray-400">Paste a YouTube URL to start taking notes</p>
                             </div>
                         </div>
                     </Link>

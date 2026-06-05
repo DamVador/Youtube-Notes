@@ -28,12 +28,13 @@ Route::get('/', function () {
 
 // Routes protégées (authentification requise)
 Route::middleware(['auth', 'verified'])->group(function () {
-    // Dashboard
-    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+    // Dashboard — temporarily redirects to Videos (the new landing page).
+    // The DashboardController is kept for a future, rebuilt dashboard.
+    Route::get('/dashboard', fn () => redirect()->route('videos.index'))->name('dashboard');
 
     // Videos
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');
-    Route::get('/videos/search', [VideoController::class, 'search'])->name('videos.search');
+    Route::get('/videos/lookup', [VideoController::class, 'lookup'])->name('videos.lookup');
     Route::post('/videos', [VideoController::class, 'store'])->name('videos.store');
     Route::get('/videos/{video}', [VideoController::class, 'show'])->name('videos.show');
     Route::delete('/videos/{video}', [VideoController::class, 'destroy'])->name('videos.destroy');

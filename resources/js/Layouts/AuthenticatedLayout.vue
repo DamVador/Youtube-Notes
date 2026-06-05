@@ -19,16 +19,13 @@ const showingNavigationDropdown = ref(false);
                 <div class="flex justify-between h-16">
                     <div class="flex items-center">
                         <!-- Logo -->
-                        <Link :href="route('dashboard')" class="flex items-center">
+                        <Link :href="route('videos.index')" class="flex items-center">
                             <Logo size="md" :showText="true" customClass="hidden sm:flex" />
                             <Logo size="md" :showText="false" customClass="flex sm:hidden" />
                         </Link>
 
                         <!-- Navigation Links -->
                         <div class="hidden sm:flex sm:items-center sm:ml-10 space-x-1">
-                            <NavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                                Dashboard
-                            </NavLink>
                             <NavLink :href="route('videos.index')" :active="route().current('videos.*')">
                                 Videos
                             </NavLink>
@@ -121,9 +118,6 @@ const showingNavigationDropdown = ref(false);
             <!-- Mobile Navigation -->
             <div v-show="showingNavigationDropdown" class="sm:hidden border-t border-slate-200 dark:border-slate-700">
                 <div class="py-2 space-y-1">
-                    <ResponsiveNavLink :href="route('dashboard')" :active="route().current('dashboard')">
-                        Dashboard
-                    </ResponsiveNavLink>
                     <ResponsiveNavLink :href="route('videos.index')" :active="route().current('videos.*')">
                         Videos
                     </ResponsiveNavLink>

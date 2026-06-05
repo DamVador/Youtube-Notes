@@ -11,7 +11,9 @@ class VideoController extends Controller
 {
     public function index(Request $request)
     {
-        $videos = $request->user()
+        $user = $request->user();
+
+        $videos = $user
             ->videos()
             ->withCount('notes')
             ->with(['document' => function ($query) {
@@ -24,55 +26,44 @@ class VideoController extends Controller
                 return $video;
             });
 
+        // Most recently watched video, for the "Continue watching" banner.
+        $continueWatching = $user->videos()
+            ->whereNotNull('last_watched_at')
+            ->latest('last_watched_at')
+            ->first();
+
+        $stats = [
+            'videos_count' => $user->videos()->count(),
+            'notes_count' => $user->notes()->count(),
+            'tags_count' => $user->tags()->count(),
+        ];
+
         return Inertia::render('Videos/Index', [
             'videos' => $videos,
+            'continueWatching' => $continueWatching,
+            'stats' => $stats,
         ]);
     }
 
-    public function search(Request $request)
+    /**
+     * Resolve a YouTube URL (or bare video id) to its public metadata.
+     *
+     * Uses the free, key-less oEmbed endpoint instead of the YouTube Data API,
+     * so it has no quota and cannot be revoked. Always returns usable metadata:
+     * if oEmbed is unavailable it falls back to a deterministic thumbnail.
+     */
+    public function lookup(Request $request)
     {
-        $query = $request->input('q');
+        $videoId = $this->extractYouTubeId($request->input('url') ?? $request->input('q'));
 
-        if (empty($query)) {
-            return response()->json([]);
+        if (!$videoId) {
+            return response()->json([
+                'error' => 'invalid_url',
+                'message' => "That doesn't look like a YouTube URL. Paste a link like https://youtube.com/watch?v=…",
+            ], 422);
         }
 
-        $apiKey = config('services.youtube.api_key');
-
-        $response = Http::get('https://www.googleapis.com/youtube/v3/search', [
-            'part' => 'snippet',
-            'q' => $query,
-            'type' => 'video',
-            'maxResults' => 10,
-            'key' => $apiKey,
-        ]);
-
-        if ($response->failed()) {
-            return response()->json(['error' => 'YouTube API error'], 500);
-        }
-
-        $items = $response->json('items') ?? [];
-
-        $results = collect($items)->map(function ($item) {
-            // Safely get videoId from nested structure
-            $videoId = $item['id']['videoId'] ?? $item['id'] ?? null;
-            
-            // Skip if no videoId (might be a channel or playlist)
-            if (!$videoId || !is_string($videoId)) {
-                return null;
-            }
-
-            return [
-                'youtube_id' => $videoId,
-                'title' => html_entity_decode($item['snippet']['title'] ?? 'Untitled'),
-                'thumbnail' => $item['snippet']['thumbnails']['medium']['url'] 
-                    ?? $item['snippet']['thumbnails']['default']['url'] 
-                    ?? null,
-                'channel_name' => $item['snippet']['channelTitle'] ?? 'Unknown',
-            ];
-        })->filter()->values();
-
-        return response()->json($results);
+        return response()->json($this->fetchMetadata($videoId));
     }
 
     public function store(Request $request)
@@ -87,10 +78,15 @@ class VideoController extends Controller
 
         $validated = $request->validate([
             'youtube_id' => 'required|string',
-            'title' => 'required|string|max:255',
+            'title' => 'nullable|string|max:255',
             'thumbnail' => 'nullable|url',
             'channel_name' => 'nullable|string|max:255',
         ]);
+
+        // Backfill anything the client didn't send so a video is always usable.
+        $validated['title'] = $validated['title'] ?? 'YouTube Video';
+        $validated['thumbnail'] = $validated['thumbnail'] ?? "https://img.youtube.com/vi/{$validated['youtube_id']}/mqdefault.jpg";
+        $validated['channel_name'] = $validated['channel_name'] ?? 'Unknown';
 
         $video = $request->user()->videos()->updateOrCreate(
             ['youtube_id' => $validated['youtube_id']],
@@ -98,6 +94,75 @@ class VideoController extends Controller
         );
 
         return response()->json($video);
+    }
+
+    /**
+     * Extract an 11-character YouTube video id from any common URL form
+     * (watch, youtu.be, embed, shorts, live) or a bare id.
+     */
+    private function extractYouTubeId(?string $input): ?string
+    {
+        $input = trim((string) $input);
+
+        if ($input === '') {
+            return null;
+        }
+
+        if (preg_match('/^[a-zA-Z0-9_-]{11}$/', $input)) {
+            return $input;
+        }
+
+        $patterns = [
+            '/youtube\.com\/watch\?(?:.*&)?v=([a-zA-Z0-9_-]{11})/',
+            '/youtu\.be\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/',
+            '/youtube\.com\/live\/([a-zA-Z0-9_-]{11})/',
+        ];
+
+        foreach ($patterns as $pattern) {
+            if (preg_match($pattern, $input, $matches)) {
+                return $matches[1];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Fetch title / channel / thumbnail for a video id via YouTube's public
+     * oEmbed endpoint, falling back to deterministic values on any failure.
+     */
+    private function fetchMetadata(string $videoId): array
+    {
+        $fallback = [
+            'youtube_id' => $videoId,
+            'title' => 'YouTube Video',
+            'channel_name' => 'Unknown',
+            'thumbnail' => "https://img.youtube.com/vi/{$videoId}/mqdefault.jpg",
+        ];
+
+        try {
+            $response = Http::timeout(5)->get('https://www.youtube.com/oembed', [
+                'url' => "https://www.youtube.com/watch?v={$videoId}",
+                'format' => 'json',
+            ]);
+
+            if ($response->successful()) {
+                $data = $response->json();
+
+                return [
+                    'youtube_id' => $videoId,
+                    'title' => html_entity_decode($data['title'] ?? $fallback['title']),
+                    'channel_name' => $data['author_name'] ?? $fallback['channel_name'],
+                    'thumbnail' => $data['thumbnail_url'] ?? $fallback['thumbnail'],
+                ];
+            }
+        } catch (\Exception $e) {
+            \Log::warning('YouTube oEmbed lookup failed: ' . $e->getMessage());
+        }
+
+        return $fallback;
     }
 
     public function show(Request $request, Video $video)
