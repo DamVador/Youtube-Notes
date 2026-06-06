@@ -40,7 +40,7 @@ onMounted(() => {
 <template>
     <Head>
         <title>VidNotes — Timestamped notes for YouTube videos</title>
-        <meta name="description" content="Take timestamped notes while you watch YouTube videos. Click any timestamp to jump back to the moment, organize with tags, and export to PDF. Free to start.">
+        <meta name="description" content="VidNotes, Take timestamped notes while you watch YouTube videos. Click any timestamp to jump back to the moment, organize with tags, and export to PDF. Free to start.">
     </Head>
 
     <div class="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -170,13 +170,13 @@ onMounted(() => {
         <section class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
             <div class="text-center">
                 <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-                    Everything you need to
+                    VidNotes ~ Everything you need to
                     <span class="shimmer-text text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-500 to-indigo-500">
                         learn from videos
                     </span>
                 </h1>
                 <p class="reveal mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed" style="--reveal-delay: 120ms">
-                    Take timestamped notes while you watch any YouTube video — then click a
+                    Take timestamped notes while you watch any YouTube video, then click a
                     timestamp to jump straight back to the moment that matters.
                 </p>
 
