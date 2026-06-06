@@ -1,5 +1,6 @@
 <script setup>
 import { Head, Link } from '@inertiajs/vue3';
+import { onMounted, ref } from 'vue';
 import Logo from '@/Components/Logo.vue';
 import CookieConsent from '@/Components/CookieConsent.vue';
 
@@ -7,15 +8,42 @@ defineProps({
     canLogin: Boolean,
     canRegister: Boolean,
 });
+
+const mobileMenuOpen = ref(false);
+
+// Reveal elements as they scroll into view (no library, respects reduced motion).
+onMounted(() => {
+    const els = document.querySelectorAll('.reveal');
+    const reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    if (reduce || !('IntersectionObserver' in window)) {
+        els.forEach((el) => el.classList.add('is-visible'));
+        return;
+    }
+
+    const observer = new IntersectionObserver(
+        (entries) => {
+            entries.forEach((entry) => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('is-visible');
+                    observer.unobserve(entry.target);
+                }
+            });
+        },
+        { threshold: 0.12, rootMargin: '0px 0px -8% 0px' }
+    );
+
+    els.forEach((el) => observer.observe(el));
+});
 </script>
 
 <template>
     <Head>
-        <title>Features - VidNotes</title>
-        <meta name="description" content="Discover VidNotes features: timestamped notes, rich text editor, tags, PDF export, presentation mode, and more. The ultimate YouTube study companion.">
+        <title>VidNotes — Timestamped notes for YouTube videos</title>
+        <meta name="description" content="Take timestamped notes while you watch YouTube videos. Click any timestamp to jump back to the moment, organize with tags, and export to PDF. Free to start.">
     </Head>
 
-    <div class="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
+    <div class="min-h-screen overflow-x-hidden bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
         <!-- Navbar -->
         <nav class="border-b border-slate-700/50">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -26,7 +54,8 @@ defineProps({
                         </Link>
                     </div>
 
-                    <div class="flex items-center gap-6">
+                    <!-- Desktop nav -->
+                    <div class="hidden sm:flex items-center gap-6">
                         <Link
                             href="/features"
                             class="text-sm font-medium text-blue-400"
@@ -39,13 +68,77 @@ defineProps({
                         >
                             Pricing
                         </Link>
+
+                        <template v-if="canLogin">
+                            <Link
+                                v-if="$page.props.auth.user"
+                                :href="route('dashboard')"
+                                class="px-4 py-2 text-sm font-medium text-white hover:text-blue-400 transition-colors"
+                            >
+                                Dashboard
+                            </Link>
+
+                            <template v-else>
+                                <Link
+                                    :href="route('login')"
+                                    class="text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                                >
+                                    Log in
+                                </Link>
+                                <Link
+                                    v-if="canRegister"
+                                    :href="route('register')"
+                                    class="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                >
+                                    Sign up
+                                </Link>
+                            </template>
+                        </template>
                     </div>
 
-                    <div v-if="canLogin" class="flex items-center gap-3">
+                    <!-- Mobile hamburger -->
+                    <button
+                        @click="mobileMenuOpen = !mobileMenuOpen"
+                        type="button"
+                        class="sm:hidden inline-flex items-center justify-center p-2 rounded-lg text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                        :aria-expanded="mobileMenuOpen"
+                        aria-controls="mobile-menu"
+                        aria-label="Toggle navigation menu"
+                    >
+                        <svg v-if="!mobileMenuOpen" class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16" />
+                        </svg>
+                        <svg v-else class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Mobile menu panel -->
+            <div v-show="mobileMenuOpen" id="mobile-menu" class="sm:hidden border-t border-slate-700/50 bg-slate-900/95">
+                <div class="px-4 py-4 space-y-1">
+                    <Link
+                        href="/features"
+                        class="block px-3 py-2 rounded-lg text-base font-medium text-blue-400 hover:bg-slate-800 transition-colors"
+                        @click="mobileMenuOpen = false"
+                    >
+                        Features
+                    </Link>
+                    <Link
+                        :href="route('subscription.pricing')"
+                        class="block px-3 py-2 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                        @click="mobileMenuOpen = false"
+                    >
+                        Pricing
+                    </Link>
+
+                    <template v-if="canLogin">
                         <Link
                             v-if="$page.props.auth.user"
                             :href="route('dashboard')"
-                            class="px-4 py-2 text-sm font-medium text-white hover:text-blue-400 transition-colors"
+                            class="block px-3 py-2 rounded-lg text-base font-medium text-white hover:bg-slate-800 transition-colors"
+                            @click="mobileMenuOpen = false"
                         >
                             Dashboard
                         </Link>
@@ -53,176 +146,120 @@ defineProps({
                         <template v-else>
                             <Link
                                 :href="route('login')"
-                                class="px-4 py-2 text-sm font-medium text-slate-300 hover:text-white transition-colors"
+                                class="block px-3 py-2 rounded-lg text-base font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-colors"
+                                @click="mobileMenuOpen = false"
                             >
                                 Log in
                             </Link>
-
                             <Link
                                 v-if="canRegister"
                                 :href="route('register')"
-                                class="px-4 py-2 text-sm font-medium bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+                                class="block mt-2 px-3 py-2 rounded-lg text-base font-medium text-center bg-blue-600 hover:bg-blue-700 text-white transition-colors"
+                                @click="mobileMenuOpen = false"
                             >
                                 Sign up
                             </Link>
                         </template>
-                    </div>
+                    </template>
                 </div>
             </div>
         </nav>
 
+      <main>
         <!-- Hero Section -->
-        <div class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+        <section class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
             <div class="text-center">
-                <h1 class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
+                <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
                     Everything you need to
-                    <span class="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-blue-500 to-indigo-500">
+                    <span class="shimmer-text text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-500 to-indigo-500">
                         learn from videos
                     </span>
                 </h1>
-                <p class="mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed">
-                    VidNotes combines powerful note-taking with seamless YouTube integration. 
-                    Never lose an insight again.
+                <p class="reveal mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed" style="--reveal-delay: 120ms">
+                    Take timestamped notes while you watch any YouTube video — then click a
+                    timestamp to jump straight back to the moment that matters.
                 </p>
+
+                <div v-if="canRegister" class="reveal mt-10 flex flex-col sm:flex-row items-center justify-center gap-4" style="--reveal-delay: 240ms">
+                    <Link
+                        :href="route('register')"
+                        class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-600/40 active:scale-95"
+                    >
+                        Get started for free
+                    </Link>
+                    <Link
+                        :href="route('subscription.pricing')"
+                        class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-slate-200 border border-slate-600 hover:border-slate-400 hover:text-white rounded-xl transition-colors"
+                    >
+                        See pricing
+                    </Link>
+                </div>
+                <p class="reveal mt-4 text-sm text-slate-500" style="--reveal-delay: 340ms">Free to start · No credit card required</p>
             </div>
 
-            <div class="absolute top-0 -z-10 h-full w-full opacity-20 overflow-hidden">
-                <div class="absolute -top-24 left-1/2 -translate-x-1/2 w-[600px] h-[300px] bg-blue-600 rounded-full blur-[120px]"></div>
+            <div aria-hidden="true" class="absolute inset-0 -z-10 opacity-20 overflow-hidden">
+                <div class="hero-glow absolute -top-24 left-1/2 w-[600px] h-[300px] max-w-full bg-blue-600 rounded-full blur-[120px]"></div>
             </div>
-        </div>
+        </section>
 
-        <!-- Main Features Grid -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <!-- Core Features -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+            <h2 class="reveal text-3xl font-bold text-white text-center mb-3">Capture, organize, and revisit</h2>
+            <p class="reveal text-slate-400 text-center max-w-2xl mx-auto mb-12" style="--reveal-delay: 100ms">
+                Three things VidNotes does so your notes stay tied to the video they came from.
+            </p>
+
             <div class="grid md:grid-cols-3 gap-8">
-                <!-- Timestamps -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-4">
+                <!-- Capture with timestamps -->
+                <article class="reveal card-lift bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-blue-500/50">
+                    <div aria-hidden="true" class="w-12 h-12 bg-blue-600/20 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Clickable Timestamps</h3>
+                    <h3 class="text-lg font-semibold text-white mb-2">Capture with timestamps</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Insert timestamps with one click. Click any timestamp to jump directly to that moment in the video.
+                        Insert the current moment with one click. Every timestamp becomes a link
+                        that jumps the video right back to that point.
                     </p>
-                </div>
+                </article>
 
-                <!-- Quick Notes -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-green-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center mb-4">
+                <!-- Write the way you think -->
+                <article class="reveal card-lift bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-green-500/50" style="--reveal-delay: 120ms">
+                    <div aria-hidden="true" class="w-12 h-12 bg-green-600/20 rounded-lg flex items-center justify-center mb-4">
                         <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Quick Notes</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Capture quick thoughts without interrupting your flow. Perfect for jotting down key points fast.
-                    </p>
-                </div>
-
-                <!-- Rich Editor -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-purple-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Rich Text Editor</h3>
+                    <h3 class="text-lg font-semibold text-white mb-2">Write the way you think</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Format your notes with headings, lists, bold, italic, and more. Your notes, your style.
+                        A rich text editor for structured notes, plus quick notes for fast capture —
+                        without breaking your focus on the video.
                     </p>
-                </div>
+                </article>
 
-                <!-- Tags -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-yellow-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-yellow-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-yellow-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <!-- Organize and reuse -->
+                <article class="reveal card-lift bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-purple-500/50" style="--reveal-delay: 240ms">
+                    <div aria-hidden="true" class="w-12 h-12 bg-purple-600/20 rounded-lg flex items-center justify-center mb-4">
+                        <svg class="w-6 h-6 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z" />
                         </svg>
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Tags & Organization</h3>
+                    <h3 class="text-lg font-semibold text-white mb-2">Organize and reuse</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        Create custom colored tags to organize your notes by topic, course, or project.
+                        Tag notes by topic, export them to PDF, or switch to presentation mode to
+                        review and teach from what you wrote.
                     </p>
-                </div>
-
-                <!-- PDF Export -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-red-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-red-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">PDF Export</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Export your notes to PDF for offline reading, printing, or sharing with others.
-                    </p>
-                </div>
-
-                <!-- Presentation Mode -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-indigo-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-indigo-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 13v-1m4 1v-3m4 3V8M8 21l4-4 4 4M3 4h18M4 4h16v12a1 1 0 01-1 1H5a1 1 0 01-1-1V4z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Presentation Mode</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Turn your notes into slides instantly. Perfect for reviewing or teaching others.
-                    </p>
-                </div>
+                </article>
             </div>
-
-            <!-- Second Row -->
-            <div class="grid md:grid-cols-3 gap-8 mt-8">
-                <!-- Continue Watching -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-teal-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-teal-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-teal-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14.752 11.168l-3.197-2.132A1 1 0 0010 9.87v4.263a1 1 0 001.555.832l3.197-2.132a1 1 0 000-1.664z" />
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Continue Watching</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Pick up right where you left off. Your video position is saved automatically.
-                    </p>
-                </div>
-
-                <!-- Search -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-orange-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-orange-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Search & Filter</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Find any note instantly. Search across all your videos and filter by tags.
-                    </p>
-                </div>
-
-                <!-- Dark Mode -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6 hover:border-slate-500/50 transition-colors">
-                    <div class="w-12 h-12 bg-slate-600/20 rounded-lg flex items-center justify-center mb-4">
-                        <svg class="w-6 h-6 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-                        </svg>
-                    </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Dark Mode</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Easy on the eyes during late-night study sessions. Switches automatically with your system.
-                    </p>
-                </div>
-            </div>
-        </div>
+        </section>
 
         <!-- Detailed Feature: Timestamps -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-700/50">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-700/50">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
-                <div>
+                <div class="reveal">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm font-medium mb-4">
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
                         Timestamps
@@ -255,17 +292,17 @@ defineProps({
                         </li>
                     </ul>
                 </div>
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-xl p-6">
+                <div class="reveal card-lift bg-slate-800/50 border border-slate-700/50 rounded-xl p-6" style="--reveal-delay: 140ms">
                     <div class="bg-slate-900 rounded-lg p-4 font-mono text-sm">
                         <p class="text-slate-300 mb-3">Introduction to the topic</p>
                         <p class="mb-3">
-                            <span class="inline-flex items-center px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded text-xs font-mono cursor-pointer hover:bg-blue-600/50 transition-colors">
+                            <span class="ts-chip inline-flex items-center px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded text-xs font-mono cursor-pointer hover:bg-blue-600/50 transition-colors">
                                 2:34
                             </span>
                             <span class="text-slate-300 ml-2">Key concept explained here</span>
                         </p>
                         <p class="mb-3">
-                            <span class="inline-flex items-center px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded text-xs font-mono cursor-pointer hover:bg-blue-600/50 transition-colors">
+                            <span class="ts-chip inline-flex items-center px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded text-xs font-mono cursor-pointer hover:bg-blue-600/50 transition-colors" style="animation-delay: 1.4s">
                                 5:12
                             </span>
                             <span class="text-slate-300 ml-2">Important example</span>
@@ -274,16 +311,35 @@ defineProps({
                     </div>
                 </div>
             </div>
-        </div>
+        </section>
+
+        <!-- Everything else -->
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+            <h2 class="reveal text-xl font-semibold text-white text-center mb-8">Plus the details that make it stick</h2>
+            <ul class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 max-w-4xl mx-auto">
+                <li class="reveal flex items-start gap-3 text-slate-300">
+                    <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong class="font-medium text-white">Continue watching</strong> — resume each video where you left off.</span>
+                </li>
+                <li class="reveal flex items-start gap-3 text-slate-300" style="--reveal-delay: 100ms">
+                    <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong class="font-medium text-white">Search &amp; filter</strong> — find any note across your videos by keyword or tag.</span>
+                </li>
+                <li class="reveal flex items-start gap-3 text-slate-300" style="--reveal-delay: 200ms">
+                    <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                    <span><strong class="font-medium text-white">Dark mode</strong> — comfortable for long, late study sessions.</span>
+                </li>
+            </ul>
+        </section>
 
         <!-- CTA Section -->
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
-            <div class="bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-2xl p-8 sm:p-12 text-center">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+            <div class="reveal cta-glow bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-2xl p-8 sm:p-12 text-center">
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">
-                    Ready to transform how you learn from videos?
+                    Start taking better notes on your videos
                 </h2>
                 <p class="text-slate-300 mb-8 max-w-xl mx-auto">
-                    Join thousands of students and professionals who use VidNotes to learn more effectively.
+                    Add a YouTube video, take your first timestamped note, and keep everything in one place.
                 </p>
                 <Link
                     v-if="canRegister"
@@ -294,7 +350,8 @@ defineProps({
                 </Link>
                 <p class="text-slate-500 text-sm mt-4">No credit card required</p>
             </div>
-        </div>
+        </section>
+      </main>
 
         <!-- Footer -->
         <footer class="border-t border-slate-700/50">
@@ -324,3 +381,113 @@ defineProps({
         <CookieConsent />
     </div>
 </template>
+
+<style scoped>
+/* Scroll-reveal: hidden until .is-visible is added by the IntersectionObserver */
+.reveal {
+    opacity: 0;
+    transform: translateY(26px);
+    transition:
+        opacity 0.7s cubic-bezier(0.16, 1, 0.3, 1),
+        transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+    transition-delay: var(--reveal-delay, 0ms);
+    will-change: opacity, transform;
+}
+.reveal.is-visible {
+    opacity: 1;
+    transform: none;
+}
+
+/* Cards gently lift and glow on hover */
+.card-lift {
+    transition:
+        transform 0.3s ease,
+        border-color 0.3s ease,
+        box-shadow 0.3s ease;
+}
+.card-lift:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 18px 40px -18px rgba(37, 99, 235, 0.45);
+}
+
+/* Slow sheen sweeping across the gradient headline */
+.shimmer-text {
+    background-size: 200% auto;
+    animation: shimmer 6s linear infinite;
+}
+@keyframes shimmer {
+    to {
+        background-position: 200% center;
+    }
+}
+
+/* Breathing glow behind the hero */
+.hero-glow {
+    transform: translateX(-50%);
+    animation: hero-glow 9s ease-in-out infinite;
+}
+@keyframes hero-glow {
+    0%,
+    100% {
+        opacity: 0.7;
+        transform: translateX(-50%) scale(1);
+    }
+    50% {
+        opacity: 1;
+        transform: translateX(-50%) scale(1.12);
+    }
+}
+
+/* Timestamp chips softly pulse to draw the eye */
+.ts-chip {
+    animation: ts-pulse 2.8s ease-in-out infinite;
+}
+@keyframes ts-pulse {
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(59, 130, 246, 0);
+    }
+    50% {
+        box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.18);
+    }
+}
+
+/* Faint drifting aura on the final call-to-action */
+.cta-glow {
+    position: relative;
+    overflow: hidden;
+}
+.cta-glow::before {
+    content: '';
+    position: absolute;
+    inset: -40%;
+    background: radial-gradient(circle at 30% 30%, rgba(59, 130, 246, 0.25), transparent 60%);
+    animation: cta-drift 12s ease-in-out infinite alternate;
+    pointer-events: none;
+}
+@keyframes cta-drift {
+    from {
+        transform: translate(-6%, -4%);
+    }
+    to {
+        transform: translate(8%, 6%);
+    }
+}
+
+/* Respect users who prefer reduced motion */
+@media (prefers-reduced-motion: reduce) {
+    .reveal,
+    .card-lift,
+    .shimmer-text,
+    .hero-glow,
+    .ts-chip,
+    .cta-glow::before {
+        animation: none !important;
+        transition: none !important;
+    }
+    .reveal {
+        opacity: 1;
+        transform: none;
+    }
+}
+</style>
