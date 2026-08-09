@@ -44,6 +44,6 @@ return [
 
     'stripe' => [
         'monthly_price_id' => env('STRIPE_MONTHLY_PRICE_ID'),
-        'yearly_price_id' => env('STRIPE_YEARLY_PRICE_ID'),
+        'lifetime_price_id' => env('STRIPE_LIFETIME_PRICE_ID'),
     ],
 ];

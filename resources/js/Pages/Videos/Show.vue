@@ -12,10 +12,31 @@ import QuickNotesInline from '@/Components/Video/QuickNotesInline.vue';
 import QuickNotesButton from '@/Components/Video/QuickNotesButton.vue';
 import KeyboardShortcutsHelp from '@/Components/Video/KeyboardShortcutsHelp.vue';
 import NotesTimeline from '@/Components/Video/NotesTimeline.vue';
+import OnboardingHint from '@/Components/OnboardingHint.vue';
 
 const props = defineProps({
     video: Object,
+    onboarding: {
+        type: Object,
+        default: () => ({ show: false, hasNote: false, hasTag: false }),
+    },
 });
+
+// Contextual onboarding highlights (steps 2 & 3 happen on this page).
+// Derived from live client state so the hint disappears instantly on action,
+// OR'd with the server flag (which accounts for notes/tags on other videos).
+const documentHasContent = computed(() => {
+    const stripped = (documentContent.value || '')
+        .replace(/<[^>]*>/g, '')
+        .replace(/&nbsp;/g, '')
+        .trim();
+    return stripped.length > 0;
+});
+const hasNoteLive = computed(() => notes.value.length > 0 || documentHasContent.value);
+const hasTagLive = computed(() => availableTags.value.length > 0);
+
+const showNoteHint = computed(() => props.onboarding.show && !props.onboarding.hasNote && !hasNoteLive.value);
+const showTagHint = computed(() => props.onboarding.show && !props.onboarding.hasTag && !hasTagLive.value);
 
 // Video width (persisted in localStorage)
 const videoWidth = ref(500);
@@ -807,16 +828,26 @@ const autoSavePosition = () => {
                             </div>
 
                             <!-- Tags -->
-                            <TagSelector
-                                :available-tags="availableTags"
-                                :selected-tags="selectedDocTags"
-                                @toggle="toggleDocTag"
-                                @create="createTag"
-                                @delete="deleteTag"
-                            />
+                            <OnboardingHint :active="showTagHint" text="Add a tag to organise your notes">
+                                <TagSelector
+                                    :available-tags="availableTags"
+                                    :selected-tags="selectedDocTags"
+                                    @toggle="toggleDocTag"
+                                    @create="createTag"
+                                    @delete="deleteTag"
+                                />
+                            </OnboardingHint>
 
                             <!-- Editor (scrollable) -->
-                            <div @click="handleEditorClick" class="flex-1 overflow-y-auto">
+                            <p v-if="showNoteHint" class="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 mt-2 mb-1">
+                                <span class="text-base">👇</span>
+                                Write your first note here
+                            </p>
+                            <div
+                                @click="handleEditorClick"
+                                class="flex-1 overflow-y-auto"
+                                :class="showNoteHint ? 'rounded-lg ring-2 ring-blue-500/60' : ''"
+                            >
                                 <TiptapEditor
                                     ref="editorDesktopRef"
                                     v-model="documentContent"
@@ -889,17 +920,27 @@ const autoSavePosition = () => {
                         </div>
 
                         <!-- Tags -->
-                        <TagSelector
-                            :available-tags="availableTags"
-                            :selected-tags="selectedDocTags"
-                            :show-label="false"
-                            @toggle="toggleDocTag"
-                            @create="createTag"
-                            @delete="deleteTag"
-                        />
+                        <OnboardingHint :active="showTagHint" text="Add a tag to organise your notes">
+                            <TagSelector
+                                :available-tags="availableTags"
+                                :selected-tags="selectedDocTags"
+                                :show-label="false"
+                                @toggle="toggleDocTag"
+                                @create="createTag"
+                                @delete="deleteTag"
+                            />
+                        </OnboardingHint>
 
                         <!-- Editor -->
-                        <div @click="handleEditorClick" class="min-h-[400px]">
+                        <p v-if="showNoteHint" class="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 px-4 pt-3">
+                            <span class="text-base">👇</span>
+                            Write your first note here
+                        </p>
+                        <div
+                            @click="handleEditorClick"
+                            class="min-h-[400px]"
+                            :class="showNoteHint ? 'ring-2 ring-blue-500/60 rounded-lg m-2' : ''"
+                        >
                             <TiptapEditor
                                 ref="editorMobileRef"
                                 v-model="documentContent"

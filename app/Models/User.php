@@ -49,6 +49,8 @@ class User extends Authenticatable
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
             'is_admin' => 'boolean',
+            'lifetime_access' => 'boolean',
+            'onboarding_dismissed_at' => 'datetime',
         ];
     }
 
@@ -76,8 +78,8 @@ class User extends Authenticatable
      */
     public function isPremium(): bool
     {
-        return 
-           $this->subscriptions()->where('stripe_status', 'active')->exists();
+        return $this->lifetime_access
+            || $this->subscriptions()->where('stripe_status', 'active')->exists();
     }
 
     /**

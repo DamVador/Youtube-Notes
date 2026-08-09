@@ -4,6 +4,8 @@ import { Head, Link, router } from '@inertiajs/vue3';
 import { ref, watch, computed, onMounted } from 'vue';
 import UpgradeBanner from '@/Components/UpgradeBanner.vue';
 import LimitWarning from '@/Components/LimitWarning.vue';
+import OnboardingChecklist from '@/Components/OnboardingChecklist.vue';
+import LifetimeBanner from '@/Components/LifetimeBanner.vue';
 import { usePage } from '@inertiajs/vue3';
 
 const page = usePage();
@@ -12,7 +14,18 @@ const props = defineProps({
     videos: Object,
     continueWatching: Object,
     stats: Object,
+    showOnboarding: Boolean,
 });
+
+const onboardingVisible = ref(props.showOnboarding);
+
+const dismissOnboarding = () => {
+    onboardingVisible.value = false;
+    router.post(route('onboarding.dismiss'), {}, { preserveScroll: true, preserveState: true });
+};
+
+// While onboarding is open and no video exists yet, point the user to the URL field.
+const highlightAddVideo = computed(() => onboardingVisible.value && (props.stats?.videos_count ?? 0) === 0);
 
 const formatTime = (seconds) => {
     if (!seconds) return '0:00';
@@ -145,6 +158,16 @@ onMounted(() => {
 
         <div class="py-6">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <!-- Onboarding checklist -->
+                <OnboardingChecklist
+                    :show="onboardingVisible"
+                    :stats="stats"
+                    @dismiss="dismissOnboarding"
+                />
+
+                <!-- Lifetime offer (stays for non-premium users, independent of onboarding) -->
+                <LifetimeBanner class="mb-6" />
+
                 <!-- Limit Error Message -->
                 <div 
                     v-if="limitError" 
@@ -202,14 +225,26 @@ onMounted(() => {
                 </Link>
 
                 <!-- Add a video -->
-                <div class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-4 mb-6">
+                <div
+                    class="bg-white dark:bg-gray-800 rounded-lg shadow-sm border p-4 mb-6 transition-all"
+                    :class="highlightAddVideo
+                        ? 'border-blue-500 ring-2 ring-blue-500/40'
+                        : 'border-gray-200 dark:border-gray-700'"
+                >
+                    <p v-if="highlightAddVideo" class="flex items-center gap-2 text-sm font-medium text-blue-600 dark:text-blue-400 mb-3">
+                        <span class="text-base">👇</span>
+                        Paste a YouTube link here to add your first video
+                    </p>
                     <div class="flex gap-2">
                         <input
                             v-model="inputValue"
                             @keyup.enter="handleSubmit"
                             type="text"
                             placeholder="Paste a YouTube URL to add a video, or type to filter your videos..."
-                            class="flex-1 rounded-lg border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                            class="flex-1 rounded-lg text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500"
+                            :class="highlightAddVideo
+                                ? 'border-blue-400 bg-blue-50/50 dark:bg-gray-700'
+                                : 'border-gray-300 dark:border-gray-600 bg-gray-50 dark:bg-gray-700'"
                         />
                         <button
                             @click="handleSubmit"
@@ -229,7 +264,7 @@ onMounted(() => {
 
                     <p v-if="addError" class="text-red-500 text-sm mt-2">{{ addError }}</p>
                     <p v-if="detectedId" class="text-green-600 dark:text-green-400 text-sm mt-2">
-                        YouTube link detected — press Enter or click “Add video”.
+                        YouTube link detected, press Enter or click “Add video”.
                     </p>
                     <p v-else class="text-gray-400 dark:text-gray-500 text-xs mt-2">
                         Works with watch, youtu.be, Shorts and embed links.

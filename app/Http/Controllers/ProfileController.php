@@ -45,11 +45,15 @@ class ProfileController extends Controller
      */
     public function destroy(Request $request): RedirectResponse
     {
-        $request->validate([
-            'password' => ['required', 'current_password'],
-        ]);
-
         $user = $request->user();
+
+        // Google accounts get a random password they never know, so only ask
+        // classic (non-Google) accounts to confirm with their password.
+        if (! is_null($user->password) && is_null($user->google_id)) {
+            $request->validate([
+                'password' => ['required', 'current_password'],
+            ]);
+        }
 
         Auth::logout();
 

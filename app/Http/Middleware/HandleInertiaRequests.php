@@ -40,6 +40,9 @@ class HandleInertiaRequests extends Middleware
                     'email' => $user->email,
                     'is_admin' => $user->is_admin,
                     'isPremium' => $user->isPremium(),
+                    // Google accounts get a random password they never know, so only
+                    // classic (non-Google) accounts have a password worth confirming.
+                    'hasPassword' => ! is_null($user->password) && is_null($user->google_id),
                     'canExportPdf' => $user->canExportPdf(),
                     'limits' => [
                         'maxVideos' => $user->maxVideos(),

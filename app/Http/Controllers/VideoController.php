@@ -35,6 +35,7 @@ class VideoController extends Controller
         $stats = [
             'videos_count' => $user->videos()->count(),
             'notes_count' => $user->notes()->count(),
+            'documents_count' => $user->documents()->whereNotNull('content')->where('content', '!=', '')->count(),
             'tags_count' => $user->tags()->count(),
         ];
 
@@ -42,6 +43,7 @@ class VideoController extends Controller
             'videos' => $videos,
             'continueWatching' => $continueWatching,
             'stats' => $stats,
+            'showOnboarding' => $user->onboarding_dismissed_at === null,
         ]);
     }
 
@@ -177,8 +179,16 @@ class VideoController extends Controller
             $query->with('tags')->orderBy('timestamp');
         }]);
 
+        $user = $request->user();
+
         return Inertia::render('Videos/Show', [
             'video' => $video,
+            'onboarding' => [
+                'show' => $user->onboarding_dismissed_at === null,
+                'hasNote' => $user->notes()->exists()
+                    || $user->documents()->whereNotNull('content')->where('content', '!=', '')->exists(),
+                'hasTag' => $user->tags()->exists(),
+            ],
         ]);
     }
 

@@ -215,24 +215,20 @@ const subscribe = async (priceId) => {
                     <div v-else-if="currentPlan === 'monthly'" class="py-3 text-center text-sm text-green-500 font-semibold">
                         ✓ Current plan
                     </div>
-                    <Link
-                        v-else
-                        :href="route('subscription.billing')"
-                        class="block w-full py-3 text-center text-sm font-semibold border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
-                    >
-                        Switch plan
-                    </Link>
+                    <div v-else-if="currentPlan === 'lifetime'" class="py-3 text-center text-sm text-slate-500">
+                        Included in Lifetime
+                    </div>
                 </div>
 
-                <!-- Yearly Plan -->
-                <div class="bg-slate-800/50 border border-slate-700/50 rounded-2xl p-8 relative">
+                <!-- Lifetime Plan -->
+                <div class="bg-slate-800/50 border border-green-500/50 rounded-2xl p-8 relative">
                     <div class="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-1 bg-green-600 text-white text-xs font-semibold rounded-full">
-                        Save 30%
+                        Best value
                     </div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Premium Yearly</h3>
+                    <h3 class="text-lg font-semibold text-white mb-2">Lifetime</h3>
                     <div class="mb-6">
-                        <span class="text-4xl font-bold text-white">{{ prices.yearly.amount }}€</span>
-                        <span class="text-slate-400">/year</span>
+                        <span class="text-4xl font-bold text-white">{{ prices.lifetime.amount }}€</span>
+                        <span class="text-slate-400">one-time</span>
                     </div>
                     <ul class="space-y-3 mb-8 text-sm text-slate-300">
                         <li class="flex items-center gap-2">
@@ -280,23 +276,16 @@ const subscribe = async (priceId) => {
                         Get started
                     </button>
                     <button
-                        v-else-if="!isSubscribed"
-                        @click="subscribe(prices.yearly.id)"
+                        v-else-if="currentPlan !== 'lifetime'"
+                        @click="subscribe(prices.lifetime.id)"
                         :disabled="form.processing"
                         class="block w-full py-3 text-center text-sm font-semibold bg-green-600 hover:bg-green-700 text-white rounded-lg transition-colors disabled:opacity-50"
                     >
-                        {{ form.processing ? 'Loading...' : 'Subscribe' }}
+                        {{ form.processing ? 'Loading...' : 'Get lifetime access' }}
                     </button>
-                    <div v-else-if="currentPlan === 'yearly'" class="py-3 text-center text-sm text-green-500 font-semibold">
+                    <div v-else class="py-3 text-center text-sm text-green-500 font-semibold">
                         ✓ Current plan
                     </div>
-                    <Link
-                        v-else
-                        :href="route('subscription.billing')"
-                        class="block w-full py-3 text-center text-sm font-semibold border border-slate-600 text-slate-300 hover:bg-slate-700 rounded-lg transition-colors"
-                    >
-                        Switch plan
-                    </Link>
                 </div>
             </div>
 

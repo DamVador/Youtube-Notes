@@ -78,4 +78,13 @@ class DashboardController extends Controller
             'recentNotes' => $recentNotes,
         ]);
     }
+
+    public function dismissOnboarding(Request $request)
+    {
+        $request->user()->forceFill([
+            'onboarding_dismissed_at' => now(),
+        ])->save();
+
+        return back();
+    }
 }

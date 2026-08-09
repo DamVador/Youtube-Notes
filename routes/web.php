@@ -31,6 +31,7 @@ Route::middleware(['auth', 'verified'])->group(function () {
     // Dashboard — temporarily redirects to Videos (the new landing page).
     // The DashboardController is kept for a future, rebuilt dashboard.
     Route::get('/dashboard', fn () => redirect()->route('videos.index'))->name('dashboard');
+    Route::post('/onboarding/dismiss', [DashboardController::class, 'dismissOnboarding'])->name('onboarding.dismiss');
 
     // Videos
     Route::get('/videos', [VideoController::class, 'index'])->name('videos.index');

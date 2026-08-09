@@ -1,6 +1,10 @@
 <script setup>
-import { ref } from 'vue';
-import { useForm } from '@inertiajs/vue3';
+import { ref, computed } from 'vue';
+import { useForm, usePage } from '@inertiajs/vue3';
+
+const page = usePage();
+// Google-only accounts have no password, so we can't ask them to confirm with one.
+const hasPassword = computed(() => page.props.auth.user?.hasPassword ?? true);
 
 const confirmingUserDeletion = ref(false);
 const passwordInput = ref(null);
@@ -17,7 +21,7 @@ const deleteUser = () => {
     form.delete(route('profile.destroy'), {
         preserveScroll: true,
         onSuccess: () => closeModal(),
-        onError: () => passwordInput.value.focus(),
+        onError: () => passwordInput.value?.focus(),
         onFinish: () => form.reset(),
     });
 };
@@ -66,10 +70,12 @@ const closeModal = () => {
                             Are you sure you want to delete your account?
                         </h3>
                         <p class="text-sm text-slate-600 dark:text-slate-400 mb-6">
-                            Once your account is deleted, all of its resources and data will be permanently deleted. Please enter your password to confirm.
+                            Once your account is deleted, all of its resources and data will be permanently deleted.
+                            <span v-if="hasPassword">Please enter your password to confirm.</span>
+                            <span v-else>This action cannot be undone.</span>
                         </p>
 
-                        <div class="mb-6">
+                        <div v-if="hasPassword" class="mb-6">
                             <label for="delete_password" class="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                 Password
                             </label>
