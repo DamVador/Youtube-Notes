@@ -15,9 +15,10 @@ class WebhookController extends CashierController
     {
         $session = $payload['data']['object'];
 
+        // 'no_payment_required' covers 100%-off promo codes (0€ checkout).
         $isLifetime = ($session['mode'] ?? null) === 'payment'
             && ($session['metadata']['purchase_type'] ?? null) === 'lifetime'
-            && ($session['payment_status'] ?? null) === 'paid';
+            && in_array($session['payment_status'] ?? null, ['paid', 'no_payment_required'], true);
 
         if ($isLifetime && ! empty($session['customer'])) {
             $user = Cashier::findBillable($session['customer']);
