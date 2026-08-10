@@ -39,7 +39,7 @@ onMounted(() => {
 
 <template>
     <Head>
-        <title>VidNotes — Timestamped notes for YouTube videos</title>
+        <title>VidNotes: Timestamped notes for YouTube videos</title>
         <meta name="description" content="VidNotes, Take timestamped notes while you watch YouTube videos. Click any timestamp to jump back to the moment, organize with tags, and export to PDF. Free to start.">
     </Head>
 
@@ -168,33 +168,86 @@ onMounted(() => {
       <main>
         <!-- Hero Section -->
         <section class="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-            <div class="text-center">
-                <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-tight">
-                    VidNotes ~ Everything you need to
-                    <span class="shimmer-text text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-500 to-indigo-500">
-                        learn from videos
-                    </span>
-                </h1>
-                <p class="reveal mt-6 text-lg sm:text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed" style="--reveal-delay: 120ms">
-                    Take timestamped notes while you watch any YouTube video, then click a
-                    timestamp to jump straight back to the moment that matters.
-                </p>
+            <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+                <!-- Copy -->
+                <div class="text-center lg:text-left">
+                    <div class="reveal inline-flex items-center gap-2 px-3 py-1 mb-5 bg-blue-600/15 text-blue-300 rounded-full text-sm font-medium">
+                        <svg aria-hidden="true" class="w-3.5 h-3.5" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                        For anyone who learns on YouTube
+                    </div>
+                    <h1 class="reveal text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-white leading-[1.1]">
+                        Turn any YouTube video into
+                        <span class="shimmer-text text-transparent bg-clip-text bg-gradient-to-r from-blue-300 via-blue-500 to-indigo-500">timestamped notes</span>
+                        you can actually find
+                    </h1>
+                    <p class="reveal mt-6 text-lg sm:text-xl text-slate-400 max-w-xl mx-auto lg:mx-0 leading-relaxed" style="--reveal-delay: 120ms">
+                        Take notes while you watch, and every note links back to the exact second.
+                        Click a timestamp to jump straight to the moment. Built for students,
+                        developers, and lifelong learners.
+                    </p>
 
-                <div v-if="canRegister" class="reveal mt-10 flex flex-col sm:flex-row items-center justify-center gap-4" style="--reveal-delay: 240ms">
-                    <Link
-                        :href="route('register')"
-                        class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-600/40 active:scale-95"
-                    >
-                        Get started for free
-                    </Link>
-                    <Link
-                        :href="route('subscription.pricing')"
-                        class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-slate-200 border border-slate-600 hover:border-slate-400 hover:text-white rounded-xl transition-colors"
-                    >
-                        See pricing
-                    </Link>
+                    <div v-if="canRegister" class="reveal mt-10 flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4" style="--reveal-delay: 240ms">
+                        <Link
+                            :href="route('register')"
+                            class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/30 transition-all duration-300 hover:-translate-y-0.5 hover:shadow-blue-600/40 active:scale-95"
+                        >
+                            Get started for free
+                        </Link>
+                        <Link
+                            :href="route('subscription.pricing')"
+                            class="w-full sm:w-auto px-8 py-3.5 text-base font-semibold text-slate-200 border border-slate-600 hover:border-slate-400 hover:text-white rounded-xl transition-colors"
+                        >
+                            See pricing
+                        </Link>
+                    </div>
+                    <p class="reveal mt-4 text-sm text-slate-500" style="--reveal-delay: 340ms">Free to start · No credit card required</p>
                 </div>
-                <p class="reveal mt-4 text-sm text-slate-500" style="--reveal-delay: 340ms">Free to start · No credit card required</p>
+
+                <!-- Product preview -->
+                <div class="reveal" style="--reveal-delay: 200ms">
+                    <div class="card-lift bg-slate-800/60 border border-slate-700/60 rounded-2xl shadow-2xl shadow-blue-950/40 p-3 sm:p-4">
+                        <!-- Window chrome -->
+                        <div aria-hidden="true" class="flex items-center gap-1.5 px-2 pb-3">
+                            <span class="w-3 h-3 rounded-full bg-red-400/70"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-400/70"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-400/70"></span>
+                        </div>
+
+                        <!-- Video player -->
+                        <div class="relative rounded-lg overflow-hidden aspect-video bg-gradient-to-br from-slate-700 to-slate-900">
+                            <div class="absolute top-3 left-3 right-3 text-xs text-slate-200/90 font-medium truncate">
+                                Photography Basics: Full Course
+                            </div>
+                            <div class="absolute inset-0 flex items-center justify-center">
+                                <div aria-hidden="true" class="w-14 h-14 rounded-full bg-white/90 flex items-center justify-center shadow-lg">
+                                    <svg class="w-6 h-6 text-slate-900 ml-1" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                                </div>
+                            </div>
+                            <div class="absolute bottom-2.5 right-3 text-[11px] text-slate-200/80 font-mono">5:12 / 14:20</div>
+                            <div class="absolute bottom-0 left-0 right-0 h-1.5 bg-white/15">
+                                <div class="h-full bg-blue-500" style="width: 38%"></div>
+                            </div>
+                        </div>
+
+                        <!-- Notes panel -->
+                        <div class="mt-3 rounded-lg bg-slate-900/70 border border-slate-700/50 p-4">
+                            <div class="flex items-center gap-2 mb-3">
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-blue-600/25 text-blue-300">Basics</span>
+                                <span class="px-2 py-0.5 rounded-full text-xs font-medium bg-purple-600/25 text-purple-300">Tips</span>
+                            </div>
+                            <p class="mb-2.5 text-sm">
+                                <span class="ts-chip inline-flex items-center px-2 py-0.5 bg-blue-600/30 text-blue-400 rounded text-xs font-mono">2:34</span>
+                                <span class="text-slate-300 ml-2">Rule of thirds</span>
+                            </p>
+                            <p class="mb-2.5 text-sm">
+                                <span class="ts-chip inline-flex items-center px-2 py-0.5 bg-blue-600/40 text-blue-300 rounded text-xs font-mono ring-1 ring-blue-400/50" style="animation-delay: 1s">5:12</span>
+                                <span class="text-slate-200 ml-2">Golden hour lighting</span>
+                            </p>
+                            <p class="text-sm text-slate-400">Switching to manual mode…</p>
+                        </div>
+                    </div>
+                    <p class="mt-3 text-center text-xs text-slate-500">Click any timestamp to jump the video to that second.</p>
+                </div>
             </div>
 
             <div aria-hidden="true" class="absolute inset-0 -z-10 opacity-20 overflow-hidden">
@@ -202,8 +255,41 @@ onMounted(() => {
             </div>
         </section>
 
+        <!-- How it works -->
+        <section class="bg-slate-900/60 border-y border-slate-700/50 py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <h2 class="reveal text-3xl font-bold text-white text-center mb-3">From video to notes in seconds</h2>
+            <p class="reveal text-slate-400 text-center max-w-2xl mx-auto mb-12" style="--reveal-delay: 100ms">
+                No setup and no extensions. Three steps and you are taking notes.
+            </p>
+            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+                <div class="reveal text-center">
+                    <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">1</div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Paste a YouTube link</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Drop any public video URL and it opens right inside VidNotes, ready to watch.
+                    </p>
+                </div>
+                <div class="reveal text-center" style="--reveal-delay: 120ms">
+                    <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">2</div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Take timestamped notes</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        One button stamps the exact second, then you write your note right next to it.
+                    </p>
+                </div>
+                <div class="reveal text-center" style="--reveal-delay: 240ms">
+                    <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">3</div>
+                    <h3 class="text-lg font-semibold text-white mb-2">Jump back anytime</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Click any timestamp to replay that moment, or export everything to PDF.
+                    </p>
+                </div>
+            </div>
+            </div>
+        </section>
+
         <!-- Core Features -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
             <h2 class="reveal text-3xl font-bold text-white text-center mb-3">Capture, organize, and revisit</h2>
             <p class="reveal text-slate-400 text-center max-w-2xl mx-auto mb-12" style="--reveal-delay: 100ms">
                 Three things VidNotes does so your notes stay tied to the video they came from.
@@ -233,7 +319,7 @@ onMounted(() => {
                     </div>
                     <h3 class="text-lg font-semibold text-white mb-2">Write the way you think</h3>
                     <p class="text-slate-400 text-sm leading-relaxed">
-                        A rich text editor for structured notes, plus quick notes for fast capture —
+                        A rich text editor for structured notes, plus quick notes for fast capture,
                         without breaking your focus on the video.
                     </p>
                 </article>
@@ -255,7 +341,8 @@ onMounted(() => {
         </section>
 
         <!-- Detailed Feature: Timestamps -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 border-t border-slate-700/50">
+        <section class="bg-slate-900/60 border-y border-slate-700/50 py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="reveal">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm font-medium mb-4">
@@ -311,29 +398,96 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+            </div>
         </section>
 
         <!-- Everything else -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
             <h2 class="reveal text-xl font-semibold text-white text-center mb-8">Plus the details that make it stick</h2>
             <ul class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 max-w-4xl mx-auto">
                 <li class="reveal flex items-start gap-3 text-slate-300">
                     <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span><strong class="font-medium text-white">Continue watching</strong> — resume each video where you left off.</span>
+                    <span><strong class="font-medium text-white">Continue watching:</strong> resume each video where you left off.</span>
                 </li>
                 <li class="reveal flex items-start gap-3 text-slate-300" style="--reveal-delay: 100ms">
                     <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span><strong class="font-medium text-white">Search &amp; filter</strong> — find any note across your videos by keyword or tag.</span>
+                    <span><strong class="font-medium text-white">Search &amp; filter:</strong> find any note across your videos by keyword or tag.</span>
                 </li>
                 <li class="reveal flex items-start gap-3 text-slate-300" style="--reveal-delay: 200ms">
                     <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
-                    <span><strong class="font-medium text-white">Dark mode</strong> — comfortable for long, late study sessions.</span>
+                    <span><strong class="font-medium text-white">Dark mode:</strong> comfortable for long, late study sessions.</span>
                 </li>
             </ul>
         </section>
 
+        <!-- Lifetime offer -->
+        <section class="bg-slate-900/60 border-y border-slate-700/50 py-16 lg:py-24">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="reveal card-lift bg-slate-800/50 border border-blue-500/30 rounded-2xl p-8 sm:p-10 grid md:grid-cols-[1fr_auto] gap-8 items-center">
+                <div>
+                    <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/20 text-blue-300 rounded-full text-sm font-medium mb-4">
+                        <span aria-hidden="true">⚡</span> Best value
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-white mb-3">Pay once. Yours forever.</h2>
+                    <p class="text-slate-400 max-w-xl">
+                        A single 29€ payment unlocks every premium feature for life, with no renewals.
+                        Prefer to spread the cost? There is a monthly plan too. And a free plan that
+                        needs no card if you just want to try.
+                    </p>
+                </div>
+                <div class="text-center md:text-right">
+                    <div class="text-4xl font-extrabold text-white">29€ <span class="text-base font-medium text-slate-400">one time</span></div>
+                    <Link
+                        v-if="canRegister"
+                        :href="route('register')"
+                        class="mt-4 inline-block px-8 py-3.5 text-base font-semibold bg-blue-600 hover:bg-blue-500 text-white rounded-xl shadow-lg shadow-blue-900/30 transition-all duration-300 hover:-translate-y-0.5 active:scale-95"
+                    >
+                        Get started for free
+                    </Link>
+                    <div class="mt-2">
+                        <Link :href="route('subscription.pricing')" class="text-sm text-slate-400 hover:text-white transition-colors">See all plans</Link>
+                    </div>
+                </div>
+            </div>
+            </div>
+        </section>
+
+        <!-- FAQ -->
+        <section class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <h2 class="reveal text-3xl font-bold text-white text-center mb-10">Questions, answered</h2>
+            <div class="space-y-4">
+                <div class="reveal bg-slate-800/50 border border-slate-700/50 rounded-xl p-5">
+                    <h3 class="font-semibold text-white mb-1.5">Is it free?</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Yes. The free plan lets you save videos and take notes with no credit card.
+                        Upgrade only when you want unlimited videos, notes, and tags.
+                    </p>
+                </div>
+                <div class="reveal bg-slate-800/50 border border-slate-700/50 rounded-xl p-5" style="--reveal-delay: 80ms">
+                    <h3 class="font-semibold text-white mb-1.5">Does it work with any YouTube video?</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        Any public YouTube link works. Paste the URL and the video opens right away,
+                        ready for timestamped notes.
+                    </p>
+                </div>
+                <div class="reveal bg-slate-800/50 border border-slate-700/50 rounded-xl p-5" style="--reveal-delay: 160ms">
+                    <h3 class="font-semibold text-white mb-1.5">Do I need to install anything?</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        No. VidNotes runs in your browser. There is nothing to download and no extension to add.
+                    </p>
+                </div>
+                <div class="reveal bg-slate-800/50 border border-slate-700/50 rounded-xl p-5" style="--reveal-delay: 240ms">
+                    <h3 class="font-semibold text-white mb-1.5">What is the lifetime plan?</h3>
+                    <p class="text-slate-400 text-sm leading-relaxed">
+                        A single 29€ payment that unlocks every premium feature for life, with no
+                        subscription and no renewals.
+                    </p>
+                </div>
+            </div>
+        </section>
+
         <!-- CTA Section -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
             <div class="reveal cta-glow bg-gradient-to-r from-blue-600/20 to-indigo-600/20 border border-blue-500/30 rounded-2xl p-8 sm:p-12 text-center">
                 <h2 class="text-2xl sm:text-3xl font-bold text-white mb-4">
                     Start taking better notes on your videos
