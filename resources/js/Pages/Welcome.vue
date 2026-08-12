@@ -256,35 +256,31 @@ onMounted(() => {
         </section>
 
         <!-- How it works -->
-        <section class="bg-slate-900/60 border-y border-slate-700/50 py-16 lg:py-24">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <h2 class="reveal text-3xl font-bold text-white text-center mb-3">From video to notes in seconds</h2>
-            <p class="reveal text-slate-400 text-center max-w-2xl mx-auto mb-12" style="--reveal-delay: 100ms">
-                No setup and no extensions. Three steps and you are taking notes.
-            </p>
-            <div class="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-                <div class="reveal text-center">
-                    <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">1</div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Paste a YouTube link</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Drop any public video URL and it opens right inside VidNotes, ready to watch.
+        <section class="py-10 lg:py-14">
+            <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-8 lg:p-12">
+                    <h2 class="reveal text-3xl font-bold text-white text-center mb-3">From video to notes in seconds</h2>
+                    <p class="reveal text-slate-400 text-center max-w-2xl mx-auto mb-12" style="--reveal-delay: 100ms">
+                        No setup and no extensions. Three steps and you are taking notes.
                     </p>
+                    <div class="grid md:grid-cols-3 gap-8">
+                        <div class="reveal text-center">
+                            <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">1</div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Paste a YouTube link</h3>
+                            <p class="text-slate-400 text-sm leading-relaxed">Drop any public video URL and it opens right inside VidNotes, ready to watch.</p>
+                        </div>
+                        <div class="reveal text-center" style="--reveal-delay: 120ms">
+                            <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">2</div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Take timestamped notes</h3>
+                            <p class="text-slate-400 text-sm leading-relaxed">One button stamps the exact second, then you write your note right next to it.</p>
+                        </div>
+                        <div class="reveal text-center" style="--reveal-delay: 240ms">
+                            <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">3</div>
+                            <h3 class="text-lg font-semibold text-white mb-2">Jump back anytime</h3>
+                            <p class="text-slate-400 text-sm leading-relaxed">Click any timestamp to replay that moment, or export everything to PDF.</p>
+                        </div>
+                    </div>
                 </div>
-                <div class="reveal text-center" style="--reveal-delay: 120ms">
-                    <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">2</div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Take timestamped notes</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        One button stamps the exact second, then you write your note right next to it.
-                    </p>
-                </div>
-                <div class="reveal text-center" style="--reveal-delay: 240ms">
-                    <div aria-hidden="true" class="mx-auto w-12 h-12 rounded-full bg-blue-600/20 text-blue-400 flex items-center justify-center text-lg font-bold mb-4">3</div>
-                    <h3 class="text-lg font-semibold text-white mb-2">Jump back anytime</h3>
-                    <p class="text-slate-400 text-sm leading-relaxed">
-                        Click any timestamp to replay that moment, or export everything to PDF.
-                    </p>
-                </div>
-            </div>
             </div>
         </section>
 
@@ -340,10 +336,31 @@ onMounted(() => {
             </div>
         </section>
 
+        <!-- Demo video -->
+        <section class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
+            <h2 class="reveal text-3xl font-bold text-white text-center mb-3">See it in action</h2>
+            <p class="reveal text-slate-400 text-center max-w-2xl mx-auto mb-10" style="--reveal-delay: 100ms">
+                Take notes while you watch, timestamp the moments that matter, and organize everything with tags.
+            </p>
+            <div class="reveal card-lift rounded-2xl overflow-hidden border border-slate-700/50 shadow-lg shadow-black/30 bg-slate-900">
+                <video
+                    class="block w-full h-auto"
+                    controls
+                    preload="none"
+                    playsinline
+                    poster="/videos/intro-poster.jpg"
+                >
+                    <source src="/videos/intro.mp4" type="video/mp4" />
+                    Your browser does not support the video tag.
+                </video>
+            </div>
+        </section>
+
         <!-- Detailed Feature: Timestamps -->
-        <section class="bg-slate-900/60 border-y border-slate-700/50 py-16 lg:py-24">
-            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="grid lg:grid-cols-2 gap-12 items-center">
+        <section class="py-10 lg:py-14">
+            <div class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-8 lg:p-12">
+                    <div class="grid lg:grid-cols-2 gap-12 items-center">
                 <div class="reveal">
                     <div class="inline-flex items-center gap-2 px-3 py-1 bg-blue-600/20 text-blue-400 rounded-full text-sm font-medium mb-4">
                         <svg aria-hidden="true" class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -398,13 +415,16 @@ onMounted(() => {
                     </div>
                 </div>
             </div>
+                </div>
             </div>
         </section>
 
         <!-- Everything else -->
-        <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-24">
-            <h2 class="reveal text-xl font-semibold text-white text-center mb-8">Plus the details that make it stick</h2>
-            <ul class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4 max-w-4xl mx-auto">
+        <section class="py-10 lg:py-14">
+            <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="bg-slate-800/40 border border-slate-700/50 rounded-2xl p-8 lg:p-10">
+                    <h2 class="reveal text-xl font-semibold text-white text-center mb-8">Plus the details that make it stick</h2>
+                    <ul class="grid sm:grid-cols-2 lg:grid-cols-3 gap-x-8 gap-y-4">
                 <li class="reveal flex items-start gap-3 text-slate-300">
                     <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     <span><strong class="font-medium text-white">Continue watching:</strong> resume each video where you left off.</span>
@@ -417,11 +437,13 @@ onMounted(() => {
                     <svg aria-hidden="true" class="w-5 h-5 text-blue-400 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
                     <span><strong class="font-medium text-white">Dark mode:</strong> comfortable for long, late study sessions.</span>
                 </li>
-            </ul>
+                    </ul>
+                </div>
+            </div>
         </section>
 
         <!-- Lifetime offer -->
-        <section class="bg-slate-900/60 border-y border-slate-700/50 py-16 lg:py-24">
+        <section class="py-16 lg:py-24">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="reveal card-lift bg-slate-800/50 border border-blue-500/30 rounded-2xl p-8 sm:p-10 grid md:grid-cols-[1fr_auto] gap-8 items-center">
                 <div>
