@@ -348,9 +348,9 @@ onMounted(() => {
                     controls
                     preload="none"
                     playsinline
-                    poster="/videos/intro-poster.jpg"
+                    poster="/media/intro-poster.jpg"
                 >
-                    <source src="/videos/intro.mp4" type="video/mp4" />
+                    <source src="/media/intro.mp4" type="video/mp4" />
                     Your browser does not support the video tag.
                 </video>
             </div>
